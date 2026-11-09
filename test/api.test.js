@@ -371,6 +371,42 @@ test('cambio de contraseña del admin', async () => {
   assert.equal((await again('POST', '/api/auth/login/admin', { username: 'admin', password: 'nuevaClave2026' })).status, 200);
 });
 
+test('administradores: agregar, entrar, nueva contraseña y eliminar', async () => {
+  assert.equal((await student('POST', '/api/admin/admins', { username: 'hacker', password: '12345678' })).status, 403);
+
+  const weak = await admin('POST', '/api/admin/admins', { username: 'adminprueba', password: 'corta' });
+  assert.equal(weak.status, 400);
+  const badUser = await admin('POST', '/api/admin/admins', { username: 'con espacio', password: 'Clave-Prueba-1' });
+  assert.equal(badUser.status, 400);
+
+  const created = await admin('POST', '/api/admin/admins', { username: 'adminprueba', name: 'Prueba', password: 'Clave-Prueba-1', must_change: true });
+  assert.equal(created.status, 201);
+  assert.equal(created.data.must_change, 1);
+  assert.equal(created.data.password_hash, undefined, 'no se expone el hash');
+  assert.equal((await admin('POST', '/api/admin/admins', { username: 'ADMINPRUEBA', password: 'Otra-Clave-22' })).status, 409);
+
+  const list = await admin('GET', '/api/admin/admins');
+  assert.equal(list.data.length, 2);
+  assert.ok(list.data.find((a) => a.me).username === 'admin');
+
+  // El nuevo administrador entra y ve que debe cambiar su contraseña
+  const other = client();
+  assert.equal((await other('POST', '/api/auth/login/admin', { username: 'adminprueba', password: 'Clave-Prueba-1' })).status, 200);
+  const stats = await other('GET', '/api/admin/stats');
+  assert.equal(stats.data.must_change_password, true);
+  assert.equal((await other('DELETE', `/api/admin/admins/${created.data.id}`)).status, 400, 'no puede eliminarse a sí mismo');
+
+  // Nueva contraseña: se cierran sus sesiones
+  assert.equal((await admin('PUT', `/api/admin/admins/${created.data.id}/password`, { password: 'Nueva-Clave-33', must_change: false })).status, 200);
+  assert.equal((await other('GET', '/api/admin/stats')).status, 401);
+  assert.equal((await other('POST', '/api/auth/login/admin', { username: 'adminprueba', password: 'Nueva-Clave-33' })).status, 200);
+
+  assert.equal((await admin('DELETE', `/api/admin/admins/${created.data.id}`)).status, 200);
+  assert.equal((await other('GET', '/api/admin/stats')).status, 401, 'al eliminarlo pierde el acceso');
+  const me = list.data.find((a) => a.me);
+  assert.equal((await admin('DELETE', `/api/admin/admins/${me.id}`)).status, 400, 'no se puede eliminar el último administrador ni a uno mismo');
+});
+
 test('al borrar la materia se borran sus archivos', async () => {
   const files = fs.readdirSync(path.join(process.env.DATA_DIR, 'uploads'));
   assert.equal(files.length, 1);

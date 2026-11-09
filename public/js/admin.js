@@ -1107,7 +1107,7 @@ function systemCard(sys) {
 
 async function pageSettings(ctx) {
   Shell.setTitle('Ajustes', 'Portal y cuenta de administrador');
-  const s = await api('/admin/settings');
+  const [s, admins] = await Promise.all([api('/admin/settings'), api('/admin/admins')]);
   if (!ctx.alive()) return;
 
   const siteFields = [
@@ -1141,14 +1141,98 @@ async function pageSettings(ctx) {
         <div><button class="btn btn-primary" type="submit">${icon('check')} Guardar ajustes</button></div>
       </form>
       <form class="card card-pad stack" data-account novalidate>
-        <div><h3 style="font-size:18px">Tu cuenta de administrador</h3><p class="muted small">Solo tú puedes entrar a este panel.</p></div>
+        <div><h3 style="font-size:18px">Tu cuenta de administrador</h3><p class="muted small">Cada administrador entra con su propio usuario y contraseña.</p></div>
         ${A.auth.user.must_change ? `<div class="alert warn">${icon('alert')}<span>Estás usando la contraseña inicial. Elige una nueva.</span></div>` : ''}
         <div class="alert" data-error hidden></div>
         ${fieldsHtml(accountFields, { username: s.admin.username, name: s.admin.name || '' })}
         <div><button class="btn btn-primary" type="submit">${icon('key')} Actualizar cuenta</button></div>
       </form>
     </section>
+    <section class="card card-pad stack-sm" data-admins>
+      <div class="row wrap">
+        <div style="flex:1;min-width:200px"><h3 style="font-size:18px">Administradores</h3><p class="muted small">Personas que pueden entrar a este panel y cambiar el contenido del portal.</p></div>
+        <button class="btn btn-primary" data-add-admin>${icon('user-plus')} Agregar administrador</button>
+      </div>
+      <div class="list">${admins
+        .map(
+          (a) => `<div class="admin-row">
+            <div class="avatar">${esc(initials(a.name || a.username))}</div>
+            <div class="info"><strong>${esc(a.name || a.username)}${a.me ? ' <span class="badge" style="display:inline-flex;margin-left:6px;vertical-align:middle">Tú</span>' : ''}</strong>
+              <span>Usuario: ${esc(a.username)}${a.must_change ? ' · debe cambiar su contraseña al entrar' : ''}</span></div>
+            ${
+              a.me
+                ? ''
+                : `<button class="btn btn-ghost btn-sm" data-reset-admin="${a.id}" title="Poner una contraseña nueva">${icon('key')}<span class="hide-mobile">Nueva contraseña</span></button>
+                   <button class="icon-btn sm plain danger" data-del-admin="${a.id}" aria-label="Eliminar administrador">${icon('trash')}</button>`
+            }
+          </div>`
+        )
+        .join('')}</div>
+    </section>
   `);
+
+  const passwordFields = (withUser) => [
+    ...(withUser
+      ? [
+          { name: 'username', label: 'Usuario', required: true, placeholder: 'Ej: adminvictoria', attrs: 'autocomplete="off" autocapitalize="none"' },
+          { name: 'name', label: 'Nombre', placeholder: 'Ej: Victoria' },
+        ]
+      : []),
+    { name: 'password', label: 'Contraseña', type: 'password', required: true, attrs: 'autocomplete="new-password" minlength="8"', hint: 'Mínimo 8 caracteres.' },
+    { name: 'confirm', label: 'Repite la contraseña', type: 'password', required: true, attrs: 'autocomplete="new-password"' },
+    { name: 'must_change', type: 'toggle', toggleLabel: 'Pedirle que elija su propia contraseña al entrar por primera vez', full: true },
+  ];
+  const findAdmin = (adminId) => admins.find((a) => String(a.id) === adminId);
+
+  document.querySelector('[data-admins]').addEventListener('click', async (e) => {
+    if (e.target.closest('[data-add-admin]')) {
+      return formModal({
+        title: 'Agregar administrador',
+        fields: passwordFields(true),
+        values: { must_change: true },
+        submitLabel: 'Crear acceso',
+        onSubmit: async (v) => {
+          if (v.password !== v.confirm) throw new Error('Las contraseñas no coinciden');
+          await api('/admin/admins', { method: 'POST', body: v });
+          toast(`Acceso creado para ${v.username}`);
+          Router.refresh();
+        },
+      });
+    }
+    const reset = e.target.closest('[data-reset-admin]');
+    if (reset) {
+      const a = findAdmin(reset.dataset.resetAdmin);
+      return formModal({
+        title: `Nueva contraseña para ${a.username}`,
+        intro: `<p class="muted small">Se cerrarán sus sesiones abiertas y deberá entrar con la contraseña nueva.</p>`,
+        fields: passwordFields(false),
+        values: { must_change: true },
+        submitLabel: 'Guardar contraseña',
+        onSubmit: async (v) => {
+          if (v.password !== v.confirm) throw new Error('Las contraseñas no coinciden');
+          await api(`/admin/admins/${a.id}/password`, { method: 'PUT', body: v });
+          toast('Contraseña actualizada');
+          Router.refresh();
+        },
+      });
+    }
+    const del = e.target.closest('[data-del-admin]');
+    if (del) {
+      const a = findAdmin(del.dataset.delAdmin);
+      const ok = await confirmDialog({
+        title: 'Eliminar administrador',
+        message: `<strong>${esc(a.name || a.username)}</strong> ya no podrá entrar al panel. El contenido que creó se conserva.`,
+      });
+      if (!ok) return;
+      try {
+        await api(`/admin/admins/${a.id}`, { method: 'DELETE' });
+        toast('Administrador eliminado');
+        Router.refresh();
+      } catch (ex) {
+        toast(ex.message, 'error');
+      }
+    }
+  });
 
   const wire = (form, fields, send) => {
     bindFields(form);

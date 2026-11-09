@@ -726,4 +726,63 @@ router.put('/account', async (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---------- administradores ---------- */
+
+const USERNAME_RE = /^[a-zA-Z0-9._-]{3,60}$/;
+const USERNAME_MSG = 'El usuario solo puede tener letras, números, punto, guion y guion bajo (mínimo 3)';
+
+function newPassword(value) {
+  const pw = typeof value === 'string' ? value : '';
+  if (pw.length < 8) throw bad('La contraseña debe tener al menos 8 caracteres');
+  if (pw.length > 200) throw bad('La contraseña es demasiado larga');
+  return pw;
+}
+
+const mustChange = (v) => (v === false || v === 0 || v === '0' ? 0 : 1);
+
+router.get('/admins', async (req, res) => {
+  const rows = await all('SELECT id, username, name, must_change, created_at FROM admins ORDER BY id');
+  res.json(rows.map((a) => ({ ...a, me: a.id === req.auth.user.id })));
+});
+
+router.post('/admins', async (req, res) => {
+  const username = requiredStr(req.body.username, 'Usuario', 60);
+  if (!USERNAME_RE.test(username)) throw bad(USERNAME_MSG);
+  const password = newPassword(req.body.password);
+  if (await get('SELECT id FROM admins WHERE username = ?', username)) throw new HttpError(409, 'Ya existe un administrador con ese usuario');
+  const info = await run(
+    'INSERT INTO admins (username, name, password_hash, must_change) VALUES (?, ?, ?, ?)',
+    username,
+    str(req.body.name, 120),
+    auth.hashPassword(password),
+    mustChange(req.body.must_change)
+  );
+  res.status(201).json(await get('SELECT id, username, name, must_change, created_at FROM admins WHERE id = ?', info.lastInsertRowid));
+});
+
+/** Pone una contraseña nueva a otro administrador (por ejemplo si la olvidó) y cierra sus sesiones. */
+router.put('/admins/:id/password', async (req, res) => {
+  const adminId = id(req.params.id);
+  if (adminId === req.auth.user.id) throw bad('Para cambiar tu propia contraseña usa "Tu cuenta de administrador"');
+  if (!(await get('SELECT id FROM admins WHERE id = ?', adminId))) throw notFound('El administrador no existe');
+  const password = newPassword(req.body.password);
+  await batch([
+    ['UPDATE admins SET password_hash = ?, must_change = ? WHERE id = ?', auth.hashPassword(password), mustChange(req.body.must_change), adminId],
+    ["DELETE FROM sessions WHERE role = 'admin' AND user_id = ?", adminId],
+  ]);
+  res.json({ ok: true });
+});
+
+router.delete('/admins/:id', async (req, res) => {
+  const adminId = id(req.params.id);
+  if (adminId === req.auth.user.id) throw bad('No puedes eliminar tu propia cuenta');
+  if (!(await get('SELECT id FROM admins WHERE id = ?', adminId))) throw notFound('El administrador no existe');
+  if ((await get('SELECT COUNT(*) AS n FROM admins')).n <= 1) throw bad('Debe quedar al menos un administrador');
+  await batch([
+    ["DELETE FROM sessions WHERE role = 'admin' AND user_id = ?", adminId],
+    ['DELETE FROM admins WHERE id = ?', adminId],
+  ]);
+  res.json({ ok: true });
+});
+
 module.exports = { router, EVENT_TYPES, MAX_UPLOAD_MB };
