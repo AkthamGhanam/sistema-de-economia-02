@@ -12,6 +12,7 @@
 
   hydrateBrand();
   hydrateIcons();
+  typewriter();
   bindThemeToggles();
   $('#year').textContent = new Date().getFullYear();
 
@@ -27,6 +28,34 @@
       }
     })
     .catch(() => {});
+
+  /* ----- título que se escribe solo ----- */
+  function typewriter() {
+    const el = document.querySelector('[data-typewriter]');
+    if (!el || Motion.reduced) return;
+    const phrases = ['en un solo lugar.', 'siempre contigo.', 'sin perder fechas.', 'a un solo clic.'];
+    let p = 0;
+    let text = phrases[0];
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    (async function loop() {
+      await wait(3200);
+      for (;;) {
+        while (text.length) {
+          text = text.slice(0, -1);
+          el.textContent = text;
+          await wait(32);
+        }
+        p = (p + 1) % phrases.length;
+        await wait(260);
+        for (const ch of phrases[p]) {
+          text += ch;
+          el.textContent = text;
+          await wait(60 + Math.random() * 50);
+        }
+        await wait(2800);
+      }
+    })();
+  }
 
   /* ----- selector estudiante / admin ----- */
   const seg = $('.segmented');

@@ -86,9 +86,17 @@ const BRAND_ISO = 'M3.39 43.86A47.01 47.01 0 0 1 96.61 43.86M3.39 56.14A47.01 47
 // Logotipo "Bytes" (Helvetica Now Text Black Italic, vectorizado del manual).
 const BRAND_WORD = 'M273.5 343.8C273.9 342 276.7 328.6 279.8 314L285.5 287.5L303 286.9C326 286.2 329.6 284.6 337.6 272.3L341 267.2L322 171.5C311.5 118.8 303 75.4 303 74.9C303 74.4 319.7 74 341 74C361.9 74 379 74.4 379 74.8C379 75.2 381 91.6 383.5 111.1C386 130.5 388.7 155 389.5 165.4C390.2 175.7 391.1 184.4 391.3 184.6C391.5 184.8 403.8 160.1 418.7 129.8L445.7 74.5L486.4 74.2C523.7 74 527.2 74.1 526.6 75.6C525.1 79.5 400.2 301.2 395.7 308C392.9 312.1 386.6 319.6 381.5 324.6C374 332.1 370.9 334.5 363.9 337.8C348.3 345.2 336 347 298.7 347L272.9 347L273.5 343.8ZM762.9 275.9C726.8 270.6 701 251.7 690.9 223.2C686.8 211.4 685.6 202.1 686.3 185.3C687.6 152.7 698 126.7 718.3 105.3C736.6 86.1 759.7 74 786.8 69.5C802.1 66.9 828.8 67.8 842.1 71.3C876.2 80.3 899.1 105.4 904.1 139.2C905.8 150.7 904.7 170.2 901.8 181.5L899.5 190.5L829.1 190.8L758.7 191L759.4 198.3C761.1 216.6 771.3 224.9 790.9 223.8C800.6 223.2 808.1 219.9 815.5 212.9L821.1 207.6L849.3 209.3C864.8 210.3 880.7 211.3 884.7 211.7L891.9 212.3L889.8 216.4C888.7 218.6 885.6 223.7 883 227.5C865.6 253.1 838 270.3 806 275.5C795.9 277.1 772.6 277.4 762.9 275.9ZM989.5 275.9C978.5 274.5 964.2 270.3 955.4 265.9C934.4 255.6 921.6 237.5 919.4 215.2L918.7 208L955.1 208.2L991.5 208.5L992.1 213.1C993 219.5 995.4 223.6 999.8 226.4C1006 230.4 1010.4 231.3 1022 230.8C1031.2 230.4 1033.6 230 1038.4 227.6C1046.2 223.8 1049.3 219.4 1049.8 211.6C1050.1 206.5 1049.8 205.1 1048 202.7C1043.4 196.9 1038.6 195.5 1011 192.5C982.4 189.3 964.8 183.2 953.1 172.4C940.1 160.4 936.1 141.9 941.6 120.3C948.4 93.3 973.6 75.7 1014 69.5C1026.5 67.6 1056.5 67.6 1069 69.5C1098.5 74 1118.7 86 1127.3 104.1C1130.7 111.2 1133 120.1 1133 126.2L1133 129L1098.6 129L1064.2 129L1063.1 124.3C1060.5 114.2 1050.8 109.3 1035 110.2C1021.3 111 1012.1 116.2 1009.9 124.3C1007.8 132.1 1011.7 138.8 1019.8 141.4C1022.4 142.2 1033.5 143.8 1044.5 145C1055.5 146.1 1069.2 148.2 1075 149.6C1099.9 155.5 1115.8 168.4 1120.5 186.5C1122.4 194 1122.4 210.3 1120.5 219.5C1112.8 256.1 1072.9 277.3 1012.7 276.9C1003.8 276.8 993.4 276.3 989.5 275.9ZM0.6 267.3C0.9 265.7 13.8 205 29.3 132.5L57.5 0.5L133.5 0.5C201 0.5 210.3 0.7 217 2.2C234.7 6.1 245.7 11.8 256.5 22.5C268.7 34.6 273.7 48.6 272.6 67.5C271.5 86.3 266.3 98.7 255 109.4C248.7 115.3 236.9 122.4 230 124.3C227.6 125 227.6 125.1 231.5 127.2C238.3 130.7 249.3 142.8 253.4 151.1C258.5 161.6 260 168.6 260 181.6C260 206.4 252.5 224.9 236.1 240.2C224.4 251.1 207.6 260.2 191 264.5C172.8 269.3 173 269.2 84.3 269.7L0 270.1L0.6 267.3ZM580.8 269C566.7 267.3 557.5 263.5 549.4 255.9C540 246.9 536.1 233 538 215.2C538.5 210.4 543 187.2 547.9 163.6C552.9 140 557 120.3 557 119.7C557 119.1 552.1 119 542.5 119.4C530.2 120.1 528 119.9 528 118.7C528 117.9 530 107.8 532.5 96.1C535 84.5 537 74.8 537 74.7C537 74.5 543.7 74.6 551.8 74.8L566.6 75.2L572.5 47.4C575.7 32 578.7 18.5 579.1 17.3L580 15L618 15C653.8 15 656.1 15.1 655.6 16.8C655.3 17.7 652.6 30.4 649.5 45C646.4 59.6 643.6 72.3 643.3 73.4C642.8 75.2 643.5 75.2 661 74.8C678.9 74.4 679.1 74.4 678.6 76.4C678.3 77.6 676.2 87.5 673.9 98.5C671.7 109.5 669.6 118.9 669.3 119.3C669 119.8 661 119.8 651.5 119.4C635.1 118.8 634.2 118.8 633.7 120.6C631 129.8 618 195.5 618 199.9C618 209.3 622.4 212 637.9 212C643.9 212 649.1 212.3 649.3 212.8C649.7 213.5 639 265.1 637.7 268.3C637.1 269.8 634.7 270 612.3 269.9C598.7 269.8 584.5 269.4 580.8 269ZM165.5 199.2C174.7 195 178.9 188.8 179.8 178.4C180.4 170.7 178.8 165.9 174.5 162.1C169.3 157.6 163.8 156.9 134.5 157.2L108.6 157.5L106.9 166C105.9 170.7 103.8 180.7 102.2 188.3L99.3 202.1L129.9 201.8C159.4 201.5 160.7 201.4 165.5 199.2ZM830.8 142.6C829.8 127.7 822.2 121 806.3 121C795.3 121 788.8 123.5 781.1 130.5C776 135.3 769 145.9 769 148.9C769 149.7 778 150 800.1 150L831.3 150L830.8 142.6ZM175.4 101.8C181.3 100 188.3 92.7 189.8 86.8C191.4 80.5 191.3 78.2 189.1 73.4C185.9 66.4 184.1 66 154.3 66L128.3 66L124.7 83.3C122.6 92.9 121 101.2 121 101.8C121 103.5 169.7 103.5 175.4 101.8Z';
 
-/** Isotipo de Bytes; toma el color del texto (currentColor). */
+// Cada anillo (dos arcos) por separado, para dibujarlos y girarlos con animaciones.
+const BRAND_RINGS = BRAND_ISO.split('M')
+  .filter(Boolean)
+  .reduce((rings, arc, i) => ((rings[i >> 1] ||= []).push('M' + arc), rings), []);
+
+/** Isotipo de Bytes; toma el color del texto (currentColor). cls: "draw" (se dibuja) o "spin" (gira). */
 function brandMark(cls = '') {
-  return `<svg class="iso ${cls}" viewBox="0 0 100 100" aria-hidden="true"><path d="${BRAND_ISO}" fill="none" stroke="currentColor" stroke-width="5.98" stroke-linecap="round"/></svg>`;
+  const rings = BRAND_RINGS.map(
+    (arcs, i) => `<g class="ring r${i + 1}" style="--r:${i}">${arcs.map((d) => `<path pathLength="1" d="${d}"/>`).join('')}</g>`
+  ).join('');
+  return `<svg class="iso ${cls}" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="5.98" stroke-linecap="round">${rings}</g></svg>`;
 }
 
 /** Nombre "BytesAcademy": logotipo Bytes + "Academy" en Inter Black Italic. */
@@ -97,9 +105,9 @@ function brandLockup(cls = '') {
 }
 
 function hydrateBrand(root = document) {
-  root.querySelectorAll('[data-brand-logo]').forEach((el) => (el.innerHTML = brandMark()));
+  root.querySelectorAll('[data-brand-logo]').forEach((el) => (el.innerHTML = brandMark('draw')));
   root.querySelectorAll('[data-brand-lockup]').forEach((el) => (el.innerHTML = brandLockup()));
-  root.querySelectorAll('[data-brand-rings]').forEach((el) => (el.innerHTML = brandMark()));
+  root.querySelectorAll('[data-brand-rings]').forEach((el) => (el.innerHTML = brandMark('spin')));
 }
 
 /* ---------- texto ---------- */
@@ -929,7 +937,12 @@ const Shell = {
   setTitle(title, sub = '') {
     const h = document.getElementById('page-title');
     const p = document.getElementById('page-sub');
-    if (h) h.textContent = title;
+    if (h) {
+      h.textContent = title;
+      h.classList.remove('title-in');
+      void h.offsetWidth; // reinicia la animación del título
+      h.classList.add('title-in');
+    }
     if (p) {
       p.textContent = sub;
       p.hidden = !sub;
@@ -1157,3 +1170,111 @@ function classTimeline(s, { admin = false } = {}) {
     .join('')}</div>`;
 }
 
+/* ---------- movimiento ---------- */
+
+const Motion = {
+  reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  fine: window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+  // Elementos que aparecen escalonados al mostrarse una página.
+  ITEMS: '.stat, .subject-card, .quick, .event, .material, .faculty-card, .career-row, .admin-row',
+
+  init() {
+    let queued = false;
+    const run = () => {
+      queued = false;
+      this.enhance(document);
+    };
+    new MutationObserver(() => {
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(run);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+    run();
+    if (this.fine && !this.reduced) this.pointer();
+  },
+
+  enhance(root) {
+    root.querySelectorAll('.hero:not([data-deco]), .subject-hero:not([data-deco])').forEach((h) => {
+      h.dataset.deco = '1';
+      h.insertAdjacentHTML(
+        'afterbegin',
+        `<div class="deco" aria-hidden="true"><div class="deco-binary"></div><div class="deco-rings">${brandMark('spin')}</div><div class="deco-glow"></div><div class="deco-sweep"></div></div>`
+      );
+    });
+    root.querySelectorAll(this.ITEMS).forEach((el) => {
+      if (el.dataset.rv) return;
+      el.dataset.rv = '1';
+      const i = el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : 0;
+      el.style.setProperty('--i', Math.min(i, 10));
+      el.classList.add('reveal');
+    });
+    root.querySelectorAll('.stat b:not([data-counted])').forEach((b) => {
+      b.dataset.counted = '1';
+      this.count(b);
+    });
+  },
+
+  /** Cuenta desde 0 hasta el número del elemento. */
+  count(el) {
+    const m = /^\s*(\d{1,6})\s*$/.exec(el.textContent);
+    if (!m || this.reduced) return;
+    const to = Number(m[1]);
+    if (to < 2) return;
+    const t0 = performance.now();
+    const dur = 900 + Math.min(to, 60) * 10;
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 4))));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
+  },
+
+  /** Luz que sigue al puntero en las tarjetas grandes e inclinación 3D de las materias. */
+  pointer() {
+    let frame = 0;
+    let last = null;
+    document.addEventListener(
+      'pointermove',
+      (e) => {
+        last = e;
+        if (!frame)
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            this.track(last);
+          });
+      },
+      { passive: true }
+    );
+    document.addEventListener('pointerout', (e) => {
+      const card = e.target.closest && e.target.closest('.subject-card');
+      if (card && !card.contains(e.relatedTarget)) {
+        card.style.removeProperty('--rx');
+        card.style.removeProperty('--ry');
+      }
+    });
+  },
+
+  track(e) {
+    if (!e.target.closest) return;
+    const spot = e.target.closest('.hero, .subject-hero, .login-hero, .login-card');
+    if (spot) {
+      const r = spot.getBoundingClientRect();
+      spot.style.setProperty('--mx', `${Math.round(e.clientX - r.left)}px`);
+      spot.style.setProperty('--my', `${Math.round(e.clientY - r.top)}px`);
+    }
+    const card = e.target.closest('.subject-card');
+    if (card) {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.setProperty('--ry', `${(x * 7).toFixed(2)}deg`);
+      card.style.setProperty('--rx', `${(-y * 7).toFixed(2)}deg`);
+    }
+  },
+};
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => Motion.init());
+else Motion.init();

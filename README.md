@@ -47,6 +47,7 @@ El portal usa la identidad de **Bytes** (manual de identidad visual M.I.V.):
 - **Tipografía:** títulos en *Inter Black Italic* (versión web de Helvetica Now Text Black Italic) y textos en Inter.
 - **Logo:** el isotipo de anillos y el logotipo "Bytes" están en `public/js/common.js` (`brandMark`, `brandLockup`) y en `public/img/` (favicon e íconos). Sin sombras ni contornos, como pide el manual.
 - **Fondos:** patrón de código binario (`public/img/binary.svg`).
+- **Movimiento:** el isotipo se dibuja al cargar y sus anillos giran en direcciones alternas; el título de la pantalla de ingreso se escribe solo y la luz del mouse descubre el código binario; las tarjetas aparecen escalonadas, los números cuentan desde cero y las materias se inclinan en 3D. Todo se apaga si el teléfono o la computadora tiene activado "reducir movimiento" (`Motion` en `public/js/common.js`).
 
 El nombre del curso que eliges en **Ajustes** (por ejemplo "Economía 02") aparece debajo de BytesAcademy.
 

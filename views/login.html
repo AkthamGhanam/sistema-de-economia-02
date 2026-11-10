@@ -23,6 +23,8 @@
 
       <section class="login-hero">
         <div class="hero-binary" aria-hidden="true"></div>
+        <div class="hero-binary lit" aria-hidden="true"></div>
+        <div class="hero-spot" aria-hidden="true"></div>
         <div class="hero-rings" data-brand-rings aria-hidden="true"></div>
         <div class="hero-brand">
           <span class="hero-iso" data-brand-logo></span>
@@ -30,7 +32,9 @@
         </div>
         <p class="hero-course"><span data-s="site_name"></span><span class="sep" aria-hidden="true">·</span><span data-s="university"></span></p>
 
-        <h1>Todo tu semestre,<br /><span class="accent">en un solo lugar.</span></h1>
+        <h1 aria-label="Todo tu semestre, en un solo lugar.">
+          <span aria-hidden="true">Todo tu semestre,<br /><span class="accent"><span data-typewriter>en un solo lugar.</span><span class="caret"></span></span></span>
+        </h1>
         <p data-s="welcome_message"></p>
 
         <ul class="features">
@@ -47,6 +51,15 @@
             <div><strong>Calendario de evaluaciones</strong><span>Exámenes, parciales y entregas con cuenta regresiva.</span></div>
           </li>
         </ul>
+
+        <div class="float-card fc1" aria-hidden="true">
+          <span class="fc-ico"><span data-icon="calendar"></span></span>
+          <div><b>Parcial</b><small>en 2 días · 7:00 a. m.</small></div>
+        </div>
+        <div class="float-card fc2" aria-hidden="true">
+          <span class="fc-ico"><span data-icon="file-text"></span></span>
+          <div><b>Guía de estudio.pdf</b><small>Material nuevo</small></div>
+        </div>
       </section>
 
       <section class="login-panel">
