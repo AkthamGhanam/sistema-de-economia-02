@@ -281,10 +281,17 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_students_career  ON students(career_id);
   `);
 
-  // Bases de la versión anterior (sin facultades): sus semestres pasan a una carrera
-  // inicial dentro de una facultad inicial, que el administrador puede renombrar.
+  // Bases de la versión anterior (sin facultades): se cargan las facultades y carreras de la
+  // Universidad de Carabobo y los semestres existentes pasan a FACES → Economía.
   if ((await get('SELECT COUNT(*) AS n FROM semesters WHERE career_id IS NULL')).n > 0) {
-    let career = await get('SELECT id FROM careers ORDER BY position, id LIMIT 1');
+    let career = null;
+    try {
+      const { economiaId } = await require('./uc').loadUcStructure();
+      if (economiaId) career = { id: economiaId };
+    } catch (err) {
+      console.error('No se pudo cargar la estructura de la UC:', err.message);
+    }
+    if (!career) career = await get('SELECT id FROM careers ORDER BY position, id LIMIT 1');
     if (!career) {
       let faculty = await get('SELECT id FROM faculties ORDER BY position, id LIMIT 1');
       if (!faculty) faculty = { id: (await run("INSERT INTO faculties (name, position) VALUES ('Facultad principal', 1)")).lastInsertRowid };

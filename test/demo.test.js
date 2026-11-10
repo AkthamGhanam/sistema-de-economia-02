@@ -38,9 +38,10 @@ test('no usa Turso ni el Blob real, y carga los datos de ejemplo', async () => {
   assert.equal(h.data.archivos, 'disco local');
 
   const s = await get('/api/auth/settings');
-  assert.equal(s.data.site_name, 'Universidad Demo');
+  assert.equal(s.data.site_name, 'Portal UC');
+  assert.equal(s.data.university, 'Universidad de Carabobo');
   assert.equal(s.data.demo.admin.username, 'demo');
-  assert.equal(s.data.demo.students[0].career, 'Economía');
+  assert.equal(s.data.demo.students[0].career, 'Economía · Semestre I');
 });
 
 test('accesos de prueba con sesión firmada', async () => {
@@ -48,8 +49,9 @@ test('accesos de prueba con sesión firmada', async () => {
   assert.equal(ad.status, 200);
   assert.match(ad.cookie, /^portal_sid=[\w-]+\.[\w-]+$/);
   const st = await get('/api/structure', ad.cookie);
-  assert.equal(st.data.length, 3);
-  assert.equal(st.data.reduce((n, f) => n + f.careers.length, 0), 7);
+  assert.equal(st.data.length, 7);
+  assert.equal(st.data.reduce((n, f) => n + f.careers.length, 0), 47);
+  assert.equal(st.data[0].code, 'FACES');
 
   const stu = await login('/api/auth/login/student', { cedula: '12345678', email: 'estudiante@demo.com' });
   const me = await get('/api/auth/me', stu.cookie);

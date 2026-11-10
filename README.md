@@ -44,15 +44,29 @@ Una línea de mercado que sube, corrige y alcanza su punto máximo. La pequeña 
 El portal se organiza en **Facultad → Carrera → Semestre → Materias** (con sus clases, materiales y evaluaciones).
 
 - **Estudiantes:** ven primero su carrera y su semestre. En **Facultades** pueden explorar todas las carreras, y en **Materias** y **Calendario** cambiar de carrera con el selector.
-- **Administradores:** en **Facultades** crean facultades y carreras. Cada semestre pertenece a una carrera, y los estudiantes se asignan a una carrera y un semestre.
-- **Bases de la versión anterior:** sus semestres pasan automáticamente a "Facultad principal → Carrera principal". Luego solo hay que cambiarles el nombre.
+- **Administradores:** en **Facultades** crean facultades y carreras. Cada semestre pertenece a una carrera, y los estudiantes se asignan a una carrera y un semestre. El botón **Cargar facultades de la UC** agrega las que falten de la Universidad de Carabobo (no borra ni cambia nada).
+- **Bases de la versión anterior:** al actualizar se cargan las facultades y carreras de la UC y los semestres que ya existían pasan a **FACES → Economía**, con sus estudiantes.
+
+### Facultades y carreras de la Universidad de Carabobo
+
+| Facultad | Carreras |
+| --- | --- |
+| Ciencias Económicas y Sociales (FACES) | Economía, Administración Comercial, Contaduría Pública, Relaciones Industriales |
+| Ciencias Jurídicas y Políticas (FCJP) | Derecho, Estudios Políticos, Ciencias Fiscales, Ciencias Forenses |
+| Ciencias de la Salud (FCS) | Medicina, Bioanálisis, Enfermería, Fisioterapia, Psicología y los TSU en Tecnología Cardiopulmonar, Citotecnología, Imagenología, Histotecnología, Terapia Psicosocial, y Registros y Estadísticas de Salud |
+| Ingeniería (FACING) | Civil, Eléctrica, Industrial, Mecánica, Química, Telecomunicaciones |
+| Ciencias de la Educación (FaCE) | Educación en Artes Plásticas, Biología, Ciencias Sociales, Física, Francés, Informática, Inglés, Lengua y Literatura, Matemática, Orientación y Química; Educación Física, Deportes y Recreación; Preescolar; Integral; Musical; Educación para el Trabajo (Comercial) |
+| Experimental de Ciencias y Tecnología (FACYT) | Biología, Computación, Física, Matemática, Química |
+| Odontología (FAO) | Odontología |
+
+La lista está en `src/uc.js`. Se armó con los sitios de cada facultad (FACES, FCJP, FCS, FACYT) y con Wikipedia para Ingeniería, Educación y Odontología, cuyos sitios no mostraban la lista. Si falta o sobra alguna carrera, se corrige desde **Facultades** en el panel.
 
 ### Modo demostración
 
-Las **vistas previas de Vercel** (las ramas distintas de `main`) arrancan en modo demostración. Usan una base temporal con 3 facultades y 7 carreras de ejemplo, y **nunca tocan la base de datos real ni el Blob**. La pantalla de inicio muestra los accesos de prueba:
+Las **vistas previas de Vercel** (las ramas distintas de `main`) arrancan en modo demostración. Usan una base temporal con las 7 facultades y 47 carreras de la UC (Economía trae materias, horario y materiales de ejemplo), y **nunca tocan la base de datos real ni el Blob**. La pantalla de inicio muestra los accesos de prueba:
 
 - **Administrador:** `demo` / `demo1234`
-- **Estudiantes:** María Pérez, cédula `12345678`, correo `estudiante@demo.com` (Economía), entre otros.
+- **Estudiantes:** María Pérez, cédula `12345678`, correo `estudiante@demo.com` (Economía · Semestre I) y José Gómez, cédula `23456789`, correo `jose.gomez@demo.com` (Economía · Semestre II).
 
 Para probarlo en tu computadora: `DEMO_MODE=1 npm start`. Si alguna vez quieres que una vista previa use la base real, agrega `PREVIEW_USE_PRODUCTION_DB=1` en las variables de *Preview* de Vercel.
 

@@ -219,6 +219,12 @@ router.delete('/careers/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+/** Crea las facultades y carreras de la Universidad de Carabobo que falten. */
+router.post('/structure/uc', async (req, res) => {
+  const r = await require('../uc').loadUcStructure();
+  res.json({ faculties: r.faculties, careers: r.careers });
+});
+
 /* ---------- semestres ---------- */
 
 async function semesterInput(body) {

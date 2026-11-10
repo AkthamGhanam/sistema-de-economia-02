@@ -859,7 +859,10 @@ async function pageStructure(ctx) {
     <div class="section-title">
       <div><h2>${A.structure.length} facultad${A.structure.length === 1 ? '' : 'es'} · ${careers} carrera${careers === 1 ? '' : 's'}</h2>
         <p>Cada carrera tiene sus semestres, y cada semestre sus materias.</p></div>
-      <button class="btn btn-primary" data-add-faculty>${icon('plus')} Nueva facultad</button>
+      <div class="row wrap">
+        <button class="btn btn-ghost" data-load-uc title="Agrega las 7 facultades y 47 carreras de la Universidad de Carabobo que falten">${icon('landmark')} Cargar facultades de la UC</button>
+        <button class="btn btn-primary" data-add-faculty>${icon('plus')} Nueva facultad</button>
+      </div>
     </div>
     ${
       A.structure.length
@@ -901,10 +904,28 @@ async function pageStructure(ctx) {
   const faculty = (id) => A.structure.find((f) => String(f.id) === id);
   const career = (id) => careerById(A.structure, id);
   document.getElementById('view').addEventListener('click', (e) => {
-    const t = e.target.closest('[data-add-faculty],[data-edit-faculty],[data-del-faculty],[data-add-career],[data-edit-career],[data-del-career],[data-open-career]');
+    const t = e.target.closest('[data-load-uc],[data-add-faculty],[data-edit-faculty],[data-del-faculty],[data-add-career],[data-edit-career],[data-del-career],[data-open-career]');
     if (!t) return;
     const d = t.dataset;
     const fail = (ex) => toast(ex.message, 'error');
+    if ('loadUc' in d) {
+      return confirmDialog({
+        title: 'Cargar facultades de la UC',
+        message:
+          'Se agregarán las <strong>7 facultades</strong> y <strong>47 carreras</strong> de pregrado de la Universidad de Carabobo que todavía no existan. No se borra ni se cambia nada de lo que ya tienes.',
+        confirmLabel: 'Cargar',
+        danger: false,
+      }).then(async (ok) => {
+        if (!ok) return;
+        try {
+          const r = await api('/admin/structure/uc', { method: 'POST' });
+          toast(r.faculties || r.careers ? `${r.faculties} facultades y ${r.careers} carreras agregadas` : 'Ya estaban todas cargadas');
+          Router.refresh();
+        } catch (ex) {
+          fail(ex);
+        }
+      });
+    }
     if ('addFaculty' in d) facultyForm(null);
     else if (d.editFaculty) facultyForm(faculty(d.editFaculty));
     else if (d.delFaculty) deleteFaculty(faculty(d.delFaculty)).catch(fail);
