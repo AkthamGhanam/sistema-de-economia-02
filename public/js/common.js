@@ -65,6 +65,7 @@ const ICONS = {
   award: '<circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/>',
   trend: '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
   // Logo: línea de mercado que sube hasta su máximo; la caída marca la barra de una "A" escondida.
+  landmark: '<path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M12 3l9 5H3z"/>',
   logo: '<path d="M3.6 21 L7.4 13.4 L10.2 15.6 L12.4 3.6 L20.4 21"/>',
   more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -1026,7 +1027,7 @@ function semesterChips(semesters, current, { all = true } = {}) {
   </div>`;
 }
 
-function subjectCard(s) {
+function subjectCard(s, { showCareer = false } = {}) {
   const next = s.next_event_date;
   const t = EVENT_TYPES[s.next_event_type] || EVENT_TYPES.examen;
   return `<a class="subject-card" href="#/materias/${s.id}" style="--c:${s.color || '#6366f1'}">
@@ -1041,7 +1042,8 @@ function subjectCard(s) {
         ${s.professor ? `<span>${icon('user')}<em>${esc(s.professor)}</em></span>` : ''}
         ${s.schedule ? `<span>${icon('clock')}<em>${esc(s.schedule)}</em></span>` : ''}
         ${s.classroom ? `<span>${icon('pin')}<em>${esc(s.classroom)}</em></span>` : ''}
-        ${!s.professor && !s.schedule && !s.classroom ? `<span>${icon('layers')}<em>${esc(s.semester_name)}</em></span>` : ''}
+        ${showCareer && s.career_name ? `<span>${icon('landmark')}<em>${esc(s.career_name)} · ${esc(s.semester_name)}</em></span>` : ''}
+        ${!showCareer && !s.professor && !s.schedule && !s.classroom ? `<span>${icon('layers')}<em>${esc(s.semester_name)}</em></span>` : ''}
       </div>
     </div>
     <div class="subject-foot">
@@ -1074,6 +1076,7 @@ function subjectHero(s, { back = '#/materias', actions = '' } = {}) {
       ${actions}
     </div>
     <div class="row wrap" style="margin-top:14px;gap:8px">
+      ${s.career_name ? `<span class="badge">${icon('landmark')}${esc(s.career_name)}</span>` : ''}
       <span class="badge">${icon('layers')}${esc(s.semester_name)}</span>
       ${s.code ? `<span class="badge">${icon('hash')}${esc(s.code)}</span>` : ''}
     </div>
@@ -1125,3 +1128,32 @@ function classTimeline(s, { admin = false } = {}) {
     .join('')}</div>`;
 }
 
+
+/* ---------- estructura: facultades y carreras ---------- */
+
+/** <option> de carreras agrupadas por facultad. */
+function careerOptionsHtml(structure, value, { allLabel = '', emptyLabel = '' } = {}) {
+  let html = '';
+  if (allLabel) html += `<option value="all" ${value === 'all' ? 'selected' : ''}>${esc(allLabel)}</option>`;
+  if (emptyLabel) html += `<option value="" ${!value ? 'selected' : ''}>${esc(emptyLabel)}</option>`;
+  for (const f of structure) {
+    if (!f.careers.length) continue;
+    html += `<optgroup label="${esc(f.name)}">${f.careers
+      .map((c) => `<option value="${c.id}" ${String(value) === String(c.id) ? 'selected' : ''}>${esc(c.name)}</option>`)
+      .join('')}</optgroup>`;
+  }
+  return html;
+}
+
+/** Carreras como opciones del formulario genérico (agrupadas por facultad). */
+const careerFieldOptions = (structure) => structure.flatMap((f) => f.careers.map((c) => ({ value: c.id, label: c.name, group: f.name })));
+
+function careerById(structure, careerId) {
+  for (const f of structure) for (const c of f.careers) if (String(c.id) === String(careerId)) return { ...c, faculty: f };
+  return null;
+}
+
+/** Selector de carrera para la barra de filtros. */
+function careerPicker(structure, value, { allLabel = 'Todas las carreras' } = {}) {
+  return `<label class="career-picker">${icon('landmark')}<select class="select" data-career aria-label="Carrera">${careerOptionsHtml(structure, value, { allLabel })}</select></label>`;
+}

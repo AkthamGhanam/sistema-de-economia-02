@@ -3,25 +3,68 @@
    ========================================================================= */
 'use strict';
 
-const A = { auth: null, settings: null, semesters: [], subjects: [] };
+const A = { auth: null, settings: null, semesters: [], subjects: [], structure: [] };
 
 async function refreshRefs() {
-  [A.semesters, A.subjects] = await Promise.all([api('/semesters'), api('/subjects')]);
+  [A.semesters, A.subjects, A.structure] = await Promise.all([api('/semesters'), api('/subjects'), api('/structure')]);
 }
 
-const semesterOptions = (empty) => [
+/** Semestres de una carrera ('all' o vacío = todos). */
+const semestersOfCareer = (career) =>
+  !career || career === 'all' ? A.semesters : A.semesters.filter((s) => String(s.career_id) === String(career));
+
+const semesterOptions = (empty, career = 'all') => [
   ...(empty ? [{ value: '', label: empty }] : []),
-  ...A.semesters.map((s) => ({ value: s.id, label: s.name + (s.period ? ` (${s.period})` : '') })),
+  ...semestersOfCareer(career).map((s) => ({ value: s.id, label: s.name + (s.period ? ` (${s.period})` : ''), group: s.career_name || '' })),
 ];
 
 const subjectOptions = (empty) => [
   ...(empty ? [{ value: '', label: empty }] : []),
-  ...A.subjects.map((s) => ({ value: s.id, label: s.name, group: s.semester_name })),
+  ...A.subjects.map((s) => ({ value: s.id, label: s.name, group: [s.career_name, s.semester_name].filter(Boolean).join(' · ') })),
 ];
 
-function adminSemester() {
+function adminCareer() {
+  const v = sessionStorage.getItem('admin-career') || 'all';
+  return v === 'all' || careerById(A.structure, v) ? v : 'all';
+}
+
+function setAdminCareer(value) {
+  sessionStorage.setItem('admin-career', value);
+  sessionStorage.removeItem('admin-semester');
+}
+
+function adminSemester(career = adminCareer()) {
   const v = sessionStorage.getItem('admin-semester') || 'all';
-  return v === 'all' || A.semesters.some((s) => String(s.id) === v) ? v : 'all';
+  return v === 'all' || semestersOfCareer(career).some((s) => String(s.id) === v) ? v : 'all';
+}
+
+function adminSemChips(career, current) {
+  const sems = semestersOfCareer(career);
+  return `<div class="chips">
+    <button class="chip ${current === 'all' ? 'active' : ''}" data-sem="all">${icon('layers')}Todos</button>
+    ${sems
+      .map(
+        (s) =>
+          `<button class="chip ${current === String(s.id) ? 'active' : ''}" data-sem="${s.id}">${esc(career === 'all' && s.career_name ? `${s.career_name} · ` : '')}${esc(s.name)}</button>`
+      )
+      .join('')}
+  </div>`;
+}
+
+/** Consulta de eventos según carrera y semestre elegidos. */
+const adminScope = (career, semester) => ({
+  semester_id: semester !== 'all' ? semester : '',
+  career_id: semester === 'all' && career !== 'all' ? career : '',
+});
+
+/** En formularios: el semestre depende de la carrera elegida. */
+function wireCareerSemesterFields(form, emptyLabel) {
+  const careerSel = form.querySelector('[name=career_id]');
+  const semSel = form.querySelector('[name=semester_id]');
+  if (!careerSel || !semSel) return;
+  careerSel.addEventListener('change', () => {
+    semSel.innerHTML = optionsHtml(semesterOptions(emptyLabel, careerSel.value || 'all'), '');
+  });
 }
 
 /* =========================================================================
@@ -32,13 +75,22 @@ function semesterForm(sem) {
   formModal({
     title: sem ? 'Editar semestre' : 'Nuevo semestre',
     fields: [
+      ...(A.structure.some((f) => f.careers.length)
+        ? [{ name: 'career_id', label: 'Carrera', type: 'select', required: true, full: true, options: [{ value: '', label: 'Elige la carrera' }, ...careerFieldOptions(A.structure)] }]
+        : []),
       { name: 'name', label: 'Nombre', required: true, placeholder: 'Ej: Semestre I' },
       { name: 'period', label: 'Período académico', placeholder: 'Ej: 2026-II' },
       { name: 'number', label: 'Número', type: 'number', placeholder: '1', attrs: 'min="1" max="20"' },
       { name: 'position', label: 'Orden en la lista', type: 'number', hint: 'Se ordenan de menor a mayor.' },
       { name: 'description', label: 'Descripción (opcional)', type: 'textarea', rows: 3, full: true, placeholder: 'Ej: Ciclo básico, sección 02, turno mañana…' },
     ],
-    values: sem || { position: A.semesters.length + 1, number: A.semesters.length + 1, period: A.settings.period || '' },
+    values: sem || {
+      career_id: adminCareer() !== 'all' ? adminCareer() : '',
+      position: semestersOfCareer(adminCareer()).length + 1,
+      number: semestersOfCareer(adminCareer()).length + 1,
+      name: `Semestre ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][semestersOfCareer(adminCareer()).length] || ''}`.trim(),
+      period: A.settings.period || '',
+    },
     submitLabel: sem ? 'Guardar cambios' : 'Crear semestre',
     onSubmit: async (v) => {
       await api(sem ? `/admin/semesters/${sem.id}` : '/admin/semesters', { method: sem ? 'PUT' : 'POST', body: v });
@@ -48,6 +100,67 @@ function semesterForm(sem) {
     },
     onDelete: sem ? () => deleteSemester(sem) : null,
   });
+}
+
+function facultyForm(f) {
+  formModal({
+    title: f ? 'Editar facultad' : 'Nueva facultad',
+    fields: [
+      { name: 'name', label: 'Nombre de la facultad', required: true, full: true, placeholder: 'Ej: Facultad de Ciencias Económicas y Sociales' },
+      { name: 'code', label: 'Siglas o código', placeholder: 'Ej: FACES' },
+      { name: 'position', label: 'Orden', type: 'number', hint: 'Menor número = aparece primero.' },
+      { name: 'color', label: 'Color', type: 'color', full: true },
+      { name: 'description', label: 'Descripción (opcional)', type: 'textarea', rows: 3, full: true },
+    ],
+    values: f || { position: A.structure.length + 1, color: SUBJECT_COLORS[A.structure.length % SUBJECT_COLORS.length] },
+    submitLabel: f ? 'Guardar cambios' : 'Crear facultad',
+    onSubmit: async (v) => {
+      await api(f ? `/admin/faculties/${f.id}` : '/admin/faculties', { method: f ? 'PUT' : 'POST', body: v });
+      toast(f ? 'Facultad actualizada' : 'Facultad creada');
+      Router.refresh();
+    },
+    onDelete: f ? () => deleteFaculty(f) : null,
+  });
+}
+
+async function deleteFaculty(f) {
+  const ok = await confirmDialog({ title: 'Eliminar facultad', message: `Se eliminará <strong>${esc(f.name)}</strong>. Solo se puede eliminar si ya no tiene carreras.` });
+  if (!ok) return false;
+  await api(`/admin/faculties/${f.id}`, { method: 'DELETE' });
+  toast('Facultad eliminada');
+  Router.refresh();
+  return true;
+}
+
+function careerForm(c, facultyId) {
+  formModal({
+    title: c ? 'Editar carrera' : 'Nueva carrera',
+    fields: [
+      { name: 'faculty_id', label: 'Facultad', type: 'select', required: true, full: true, options: A.structure.map((f) => ({ value: f.id, label: f.name })) },
+      { name: 'name', label: 'Nombre de la carrera', required: true, full: true, placeholder: 'Ej: Economía' },
+      { name: 'code', label: 'Código', placeholder: 'Ej: ECO' },
+      { name: 'position', label: 'Orden', type: 'number' },
+      { name: 'color', label: 'Color', type: 'color', full: true },
+      { name: 'description', label: 'Descripción (opcional)', type: 'textarea', rows: 3, full: true },
+    ],
+    values: c || { faculty_id: facultyId, position: ((A.structure.find((f) => String(f.id) === String(facultyId)) || { careers: [] }).careers.length || 0) + 1 },
+    submitLabel: c ? 'Guardar cambios' : 'Crear carrera',
+    onSubmit: async (v) => {
+      await api(c ? `/admin/careers/${c.id}` : '/admin/careers', { method: c ? 'PUT' : 'POST', body: v });
+      toast(c ? 'Carrera actualizada' : 'Carrera creada');
+      Router.refresh();
+    },
+    onDelete: c ? () => deleteCareer(c) : null,
+  });
+}
+
+async function deleteCareer(c) {
+  const ok = await confirmDialog({ title: 'Eliminar carrera', message: `Se eliminará <strong>${esc(c.name)}</strong>. Solo se puede eliminar si ya no tiene semestres.` });
+  if (!ok) return false;
+  await api(`/admin/careers/${c.id}`, { method: 'DELETE' });
+  toast('Carrera eliminada');
+  Router.refresh();
+  return true;
 }
 
 async function deleteSemester(sem) {
@@ -101,7 +214,7 @@ function subjectForm(sub, { semesterId } = {}) {
       },
     ],
     values: sub || {
-      semester_id: semesterId || (adminSemester() !== 'all' ? adminSemester() : A.semesters[0]?.id),
+      semester_id: semesterId || (adminSemester() !== 'all' ? adminSemester() : (semestersOfCareer(adminCareer())[0] || A.semesters[0] || {}).id),
       color: SUBJECT_COLORS[A.subjects.length % SUBJECT_COLORS.length],
     },
     submitLabel: sub ? 'Guardar cambios' : 'Crear materia',
@@ -576,10 +689,12 @@ function studentForm(st) {
       { name: 'cedula', label: 'Cédula', required: true, placeholder: 'Ej: 12345678', attrs: 'inputmode="numeric"' },
       { name: 'email', label: 'Correo', type: 'email', required: true, placeholder: 'estudiante@correo.com' },
       { name: 'name', label: 'Nombre y apellido', placeholder: 'Ej: María Pérez', full: true },
-      { name: 'semester_id', label: 'Semestre', type: 'select', options: semesterOptions('Sin definir'), full: true },
+      { name: 'career_id', label: 'Carrera', type: 'select', options: [{ value: '', label: 'Sin definir' }, ...careerFieldOptions(A.structure)] },
+      { name: 'semester_id', label: 'Semestre', type: 'select', options: semesterOptions('Sin definir', st ? st.career_id : adminCareer()) },
       { name: 'active', type: 'toggle', toggleLabel: 'Acceso activo (puede ingresar al portal)', full: true },
     ],
-    values: st || { active: true, semester_id: adminSemester() !== 'all' ? adminSemester() : '' },
+    values: st || { active: true, career_id: adminCareer() !== 'all' ? adminCareer() : '', semester_id: adminSemester() !== 'all' ? adminSemester() : '' },
+    onMount: (form) => wireCareerSemesterFields(form, 'Sin definir'),
     submitLabel: st ? 'Guardar cambios' : 'Agregar',
     onSubmit: async (v) => {
       await api(st ? `/admin/students/${st.id}` : '/admin/students', { method: st ? 'PUT' : 'POST', body: v });
@@ -614,8 +729,11 @@ function importForm() {
         full: true,
         placeholder: '12345678, maria.perez@correo.com, María Pérez\n23456789; jose.gomez@correo.com; José Gómez',
       },
-      { name: 'semester_id', label: 'Asignar al semestre', type: 'select', options: semesterOptions('No cambiar / sin definir'), full: true },
+      { name: 'career_id', label: 'Asignar a la carrera', type: 'select', options: [{ value: '', label: 'No cambiar / sin definir' }, ...careerFieldOptions(A.structure)] },
+      { name: 'semester_id', label: 'Asignar al semestre', type: 'select', options: semesterOptions('No cambiar / sin definir', adminCareer()) },
     ],
+    values: { career_id: adminCareer() !== 'all' ? adminCareer() : '' },
+    onMount: (form) => wireCareerSemesterFields(form, 'No cambiar / sin definir'),
     submitLabel: 'Importar',
     onSubmit: async (v) => {
       const r = await api('/admin/students/import', { method: 'POST', body: v });
@@ -645,7 +763,8 @@ async function pageOverview(ctx) {
   if (!ctx.alive()) return;
 
   const steps = [
-    ['Crea los semestres', st.semesters > 0, '#/semestres'],
+    ['Crea las facultades y carreras', st.careers > 0, '#/facultades'],
+    ['Crea los semestres de cada carrera', st.semesters > 0, '#/semestres'],
     ['Agrega las materias', st.subjects > 0, '#/materias'],
     ['Sube materiales y programa evaluaciones', st.materials > 0 || st.upcoming > 0, '#/materiales'],
     ['Registra a los estudiantes', st.students > 0 || A.settings.allow_self_register === '1', '#/estudiantes'],
@@ -681,7 +800,7 @@ async function pageOverview(ctx) {
                        `<a href="${href}" class="row" style="color:#fff;text-decoration:none;gap:10px"><span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:${done ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.2)'};color:${done ? '#5b4cf0' : '#fff'}">${icon(done ? 'check' : 'right')}</span><span style="${done ? 'opacity:.75;text-decoration:line-through' : 'font-weight:650'}">${t}</span></a>`
                    )
                    .join('')}</div>`
-              : `<div class="lbl">Todo listo</div><h3>Tu portal está funcionando</h3><div class="sub">${st.active_students} estudiante(s) con acceso · ${fmtSize(st.storage_bytes)} en archivos</div>`
+              : `<div class="lbl">Todo listo</div><h3>Tu portal está funcionando</h3><div class="sub">${st.faculties} facultad(es) · ${st.careers} carrera(s) · ${st.active_students} estudiante(s) con acceso</div>`
           }
         </div>
       </div>
@@ -729,46 +848,132 @@ async function pageOverview(ctx) {
   });
 }
 
-async function pageSemesters(ctx) {
-  Shell.setTitle('Semestres', 'Organiza las materias por semestre');
+async function pageStructure(ctx) {
+  Shell.setTitle('Facultades', 'Estructura de la universidad');
+  ctx.render(skeleton([['100%', '220px'], ['100%', '220px']]));
   await refreshRefs();
   if (!ctx.alive()) return;
+  const careers = A.structure.reduce((n, f) => n + f.careers.length, 0);
 
   ctx.render(`
     <div class="section-title">
-      <div><h2>${A.semesters.length} semestre${A.semesters.length === 1 ? '' : 's'}</h2><p>Cada materia pertenece a un semestre.</p></div>
-      <button class="btn btn-primary" data-add>${icon('plus')} Nuevo semestre</button>
+      <div><h2>${A.structure.length} facultad${A.structure.length === 1 ? '' : 'es'} · ${careers} carrera${careers === 1 ? '' : 's'}</h2>
+        <p>Cada carrera tiene sus semestres, y cada semestre sus materias.</p></div>
+      <button class="btn btn-primary" data-add-faculty>${icon('plus')} Nueva facultad</button>
     </div>
     ${
-      A.semesters.length
-        ? `<div class="list">${A.semesters
+      A.structure.length
+        ? `<div class="faculty-grid admin">${A.structure
             .map(
-              (s, i) => `<div class="admin-row">
-                <div class="color-tile" style="--c:${SUBJECT_COLORS[i % SUBJECT_COLORS.length]}">${s.number || i + 1}</div>
-                <div class="info"><strong>${esc(s.name)}</strong><span>${[s.period, `${s.subject_count} materia${s.subject_count === 1 ? '' : 's'}`, s.description].filter(Boolean).map(esc).join(' · ')}</span></div>
-                <button class="btn btn-soft btn-sm hide-mobile" data-open="${s.id}">${icon('book')} Materias</button>
-                <button class="icon-btn sm plain" data-edit="${s.id}" aria-label="Editar">${icon('edit')}</button>
-                <button class="icon-btn sm plain danger" data-del="${s.id}" aria-label="Eliminar">${icon('trash')}</button>
-              </div>`
+              (f) => `<section class="faculty-card" style="--c:${f.color || '#8b5cf6'}">
+                <div class="faculty-head">
+                  <div class="head-actions">
+                    <button class="icon-btn sm" data-edit-faculty="${f.id}" aria-label="Editar facultad">${icon('edit')}</button>
+                    <button class="icon-btn sm" data-del-faculty="${f.id}" aria-label="Eliminar facultad">${icon('trash')}</button>
+                  </div>
+                  <div class="f-ico">${icon('landmark')}</div>
+                  ${f.code ? `<span class="badge">${esc(f.code)}</span>` : ''}
+                  <h3 style="margin-top:8px">${esc(f.name)}</h3>
+                  ${f.description ? `<p>${esc(f.description)}</p>` : ''}
+                </div>
+                <div class="career-list">
+                  ${f.careers
+                    .map(
+                      (c) => `<div class="career-row" style="--c:${c.color || f.color || '#6366f1'}">
+                        <span class="dot"></span>
+                        <span class="info"><strong>${esc(c.name)}${c.code ? ` <small class="muted">(${esc(c.code)})</small>` : ''}</strong>
+                          <span>${c.semester_count} semestre${c.semester_count === 1 ? '' : 's'} · ${c.subject_count} materia${c.subject_count === 1 ? '' : 's'} · ${c.student_count} estudiante${c.student_count === 1 ? '' : 's'}</span></span>
+                        <button class="icon-btn sm" data-open-career="${c.id}" title="Ver semestres" aria-label="Ver semestres">${icon('layers')}</button>
+                        <button class="icon-btn sm plain" data-edit-career="${c.id}" aria-label="Editar carrera">${icon('edit')}</button>
+                        <button class="icon-btn sm plain danger" data-del-career="${c.id}" aria-label="Eliminar carrera">${icon('trash')}</button>
+                      </div>`
+                    )
+                    .join('')}
+                  <button class="btn btn-ghost btn-sm" style="margin:6px" data-add-career="${f.id}">${icon('plus')} Agregar carrera</button>
+                </div>
+              </section>`
             )
             .join('')}</div>`
-        : `<div class="card">${emptyState({ icon: 'layers', title: 'Crea tu primer semestre', text: 'Por ejemplo “Semestre I”, “Semestre II”… Luego podrás agregar sus materias.', action: `<button class="btn btn-primary" data-add>${icon('plus')} Nuevo semestre</button>` })}</div>`
+        : `<div class="card">${emptyState({ icon: 'landmark', title: 'Crea la primera facultad', text: 'Luego agrégale sus carreras, y a cada carrera sus semestres y materias.', action: `<button class="btn btn-primary" data-add-faculty>${icon('plus')} Nueva facultad</button>` })}</div>`
     }
   `);
 
+  const faculty = (id) => A.structure.find((f) => String(f.id) === id);
+  const career = (id) => careerById(A.structure, id);
+  document.getElementById('view').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-add-faculty],[data-edit-faculty],[data-del-faculty],[data-add-career],[data-edit-career],[data-del-career],[data-open-career]');
+    if (!t) return;
+    const d = t.dataset;
+    const fail = (ex) => toast(ex.message, 'error');
+    if ('addFaculty' in d) facultyForm(null);
+    else if (d.editFaculty) facultyForm(faculty(d.editFaculty));
+    else if (d.delFaculty) deleteFaculty(faculty(d.delFaculty)).catch(fail);
+    else if (d.addCareer) careerForm(null, d.addCareer);
+    else if (d.editCareer) careerForm(career(d.editCareer));
+    else if (d.delCareer) deleteCareer(career(d.delCareer)).catch(fail);
+    else if (d.openCareer) {
+      setAdminCareer(d.openCareer);
+      location.hash = '#/semestres';
+    }
+  });
+}
+
+async function pageSemesters(ctx) {
+  Shell.setTitle('Semestres', 'Los semestres de cada carrera');
+  await refreshRefs();
+  if (!ctx.alive()) return;
+  if (!A.structure.some((f) => f.careers.length)) {
+    return ctx.render(`<div class="card">${emptyState({ icon: 'landmark', title: 'Primero crea una facultad y una carrera', text: 'Cada semestre pertenece a una carrera.', action: `<a class="btn btn-primary" href="#/facultades">${icon('plus')} Crear facultad</a>` })}</div>`);
+  }
+  let career = adminCareer();
+
+  ctx.render(`
+    <section class="toolbar">
+      ${careerPicker(A.structure, career)}
+      <span class="spacer"></span>
+      <button class="btn btn-primary" data-add>${icon('plus')} Nuevo semestre</button>
+    </section>
+    <section data-list></section>
+  `);
   const view = document.getElementById('view');
+  const draw = () => {
+    const list = semestersOfCareer(career);
+    view.querySelector('[data-list]').innerHTML = list.length
+      ? `<div class="list">${list
+          .map((sm, i) => {
+            const c = careerById(A.structure, sm.career_id);
+            return `<div class="admin-row">
+              <div class="color-tile" style="--c:${(c && c.color) || SUBJECT_COLORS[i % SUBJECT_COLORS.length]}">${sm.number || i + 1}</div>
+              <div class="info"><strong>${esc(sm.name)}</strong><span>${[c && c.name, sm.period, `${sm.subject_count} materia${sm.subject_count === 1 ? '' : 's'}`, sm.description].filter(Boolean).map(esc).join(' · ')}</span></div>
+              <button class="btn btn-soft btn-sm hide-mobile" data-open="${sm.id}">${icon('book')} Materias</button>
+              <button class="icon-btn sm plain" data-edit="${sm.id}" aria-label="Editar">${icon('edit')}</button>
+              <button class="icon-btn sm plain danger" data-del="${sm.id}" aria-label="Eliminar">${icon('trash')}</button>
+            </div>`;
+          })
+          .join('')}</div>`
+      : `<div class="card">${emptyState({ icon: 'layers', title: 'Esta carrera aún no tiene semestres', text: 'Crea “Semestre I”, “Semestre II”… y luego agrega sus materias.', action: `<button class="btn btn-primary" data-add>${icon('plus')} Nuevo semestre</button>` })}</div>`;
+  };
+
+  view.querySelector('[data-career]').addEventListener('change', (e) => {
+    career = e.target.value;
+    setAdminCareer(career);
+    draw();
+  });
   view.addEventListener('click', (e) => {
-    const find = (id) => A.semesters.find((s) => String(s.id) === id);
+    const find = (id) => A.semesters.find((x) => String(x.id) === id);
     const t = e.target.closest('[data-add],[data-edit],[data-del],[data-open]');
     if (!t) return;
     if ('add' in t.dataset) semesterForm(null);
     else if (t.dataset.edit) semesterForm(find(t.dataset.edit));
     else if (t.dataset.del) deleteSemester(find(t.dataset.del)).catch((ex) => toast(ex.message, 'error'));
     else if (t.dataset.open) {
+      const sm = find(t.dataset.open);
+      if (sm && sm.career_id) setAdminCareer(String(sm.career_id));
       sessionStorage.setItem('admin-semester', t.dataset.open);
       location.hash = '#/materias';
     }
   });
+  draw();
 }
 
 async function pageSubjectsAdmin(ctx) {
@@ -778,17 +983,16 @@ async function pageSubjectsAdmin(ctx) {
   if (!ctx.alive()) return;
 
   if (!A.semesters.length) {
-    return ctx.render(`<div class="card">${emptyState({ icon: 'layers', title: 'Primero crea un semestre', text: 'Las materias se organizan por semestre.', action: `<a class="btn btn-primary" href="#/semestres">${icon('plus')} Crear semestre</a>` })}</div>`);
+    return ctx.render(`<div class="card">${emptyState({ icon: 'layers', title: 'Primero crea un semestre', text: 'Las materias se organizan por carrera y semestre.', action: `<a class="btn btn-primary" href="#/semestres">${icon('plus')} Crear semestre</a>` })}</div>`);
   }
 
-  let current = adminSemester();
+  let career = adminCareer();
+  let current = adminSemester(career);
   let q = '';
   ctx.render(`
-    <section class="stack-sm">
-      <div class="chips">
-        <button class="chip ${current === 'all' ? 'active' : ''}" data-sem="all">${icon('layers')}Todos</button>
-        ${A.semesters.map((s) => `<button class="chip ${current === String(s.id) ? 'active' : ''}" data-sem="${s.id}">${esc(s.name)}</button>`).join('')}
-      </div>
+    <section class="filters">
+      <div class="toolbar">${careerPicker(A.structure, career)}</div>
+      <div data-semchips>${adminSemChips(career, current)}</div>
       <div class="toolbar">
         <div class="input-icon search">${icon('search')}<input class="input" type="search" placeholder="Buscar materia…" data-search></div>
         <span class="spacer"></span>
@@ -802,14 +1006,16 @@ async function pageSubjectsAdmin(ctx) {
   const draw = () => {
     const term = q.trim().toLowerCase();
     const list = A.subjects.filter(
-      (s) => (current === 'all' || String(s.semester_id) === current) && (!term || [s.name, s.professor, s.code].some((v) => (v || '').toLowerCase().includes(term)))
+      (s) =>
+        (current === 'all' ? career === 'all' || String(s.career_id) === String(career) : String(s.semester_id) === current) &&
+        (!term || [s.name, s.professor, s.code].some((v) => (v || '').toLowerCase().includes(term)))
     );
     view.querySelector('[data-list]').innerHTML = list.length
       ? `<div class="list">${list
           .map(
             (s) => `<div class="admin-row" style="cursor:pointer" data-open="${s.id}">
               <div class="color-tile" style="--c:${s.color || '#6366f1'}">${esc(initials(s.name))}</div>
-              <div class="info"><strong>${esc(s.name)}</strong><span>${[s.semester_name, s.professor, s.schedule].filter(Boolean).map(esc).join(' · ')}</span></div>
+              <div class="info"><strong>${esc(s.name)}</strong><span>${[career === 'all' ? s.career_name : '', s.semester_name, s.professor, s.schedule].filter(Boolean).map(esc).join(' · ')}</span></div>
               <span class="badge neutral hide-mobile">${icon('book')}${s.class_count} clases</span>
               <span class="badge neutral hide-mobile">${icon('folder')}${s.material_count} materiales</span>
               <button class="icon-btn sm plain" data-edit="${s.id}" aria-label="Editar">${icon('edit')}</button>
@@ -832,10 +1038,17 @@ async function pageSubjectsAdmin(ctx) {
     }
     const t = e.target.closest('[data-add],[data-edit],[data-del],[data-open]');
     if (!t) return;
-    if ('add' in t.dataset) subjectForm(null, { semesterId: current !== 'all' ? current : undefined });
+    if ('add' in t.dataset) subjectForm(null, { semesterId: current !== 'all' ? current : (semestersOfCareer(career)[0] || {}).id });
     else if (t.dataset.edit) subjectForm(find(t.dataset.edit));
     else if (t.dataset.del) deleteSubject(find(t.dataset.del)).catch((ex) => toast(ex.message, 'error'));
     else if (t.dataset.open) location.hash = `#/materias/${t.dataset.open}`;
+  });
+  view.querySelector('[data-career]').addEventListener('change', (e) => {
+    career = e.target.value;
+    setAdminCareer(career);
+    current = 'all';
+    view.querySelector('[data-semchips]').innerHTML = adminSemChips(career, current);
+    draw();
   });
   view.querySelector('[data-search]').addEventListener('input', (e) => {
     q = e.target.value;
@@ -928,22 +1141,24 @@ async function pageCalendarAdmin(ctx) {
   Shell.setTitle('Calendario', 'Programa exámenes, parciales y entregas');
   await refreshRefs();
   if (!ctx.alive()) return;
-  let current = adminSemester();
+  let career = adminCareer();
+  let current = adminSemester(career);
 
   ctx.render(`
-    <section class="row wrap">
-      <div class="chips" style="flex:1;min-width:0">
-        <button class="chip ${current === 'all' ? 'active' : ''}" data-sem="all">${icon('layers')}Todos</button>
-        ${A.semesters.map((s) => `<button class="chip ${current === String(s.id) ? 'active' : ''}" data-sem="${s.id}">${esc(s.name)}</button>`).join('')}
+    <section class="filters">
+      <div class="toolbar">
+        ${careerPicker(A.structure, career)}
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" data-schedule>${icon('clock')} Cargar horario de clases</button>
+        <button class="btn btn-primary" data-new>${icon('calendar-plus')} Programar evaluación</button>
       </div>
-      <button class="btn btn-ghost" data-schedule>${icon('clock')} Cargar horario de clases</button>
-      <button class="btn btn-primary" data-new>${icon('calendar-plus')} Programar evaluación</button>
+      <div data-semchips>${adminSemChips(career, current)}</div>
     </section>
     <section data-calendar></section>
   `);
 
   const cal = new CalendarView(document.querySelector('[data-calendar]'), {
-    load: (from, to) => api('/events', { query: { from, to, semester_id: current === 'all' ? '' : current } }),
+    load: (from, to) => api('/events', { query: { from, to, ...adminScope(career, current) } }),
     onEvent: openEvent,
     agendaActions: (date) => `<button class="btn btn-soft btn-block" data-add-date="${date}">${icon('plus')} Agregar en esta fecha</button>`,
   });
@@ -960,6 +1175,13 @@ async function pageCalendarAdmin(ctx) {
     if (e.target.closest('[data-schedule]')) return scheduleForm();
     const ad = e.target.closest('[data-add-date]');
     if (ad) eventForm(null, { date: ad.dataset.addDate });
+  });
+  view.querySelector('[data-career]').addEventListener('change', (e) => {
+    career = e.target.value;
+    setAdminCareer(career);
+    current = 'all';
+    view.querySelector('[data-semchips]').innerHTML = adminSemChips(career, current);
+    cal.reload();
   });
   await cal.reload();
 }
@@ -1016,7 +1238,8 @@ async function pageStudents(ctx) {
   Shell.setTitle('Estudiantes', 'Quién puede entrar al portal');
   ctx.render(skeleton([['100%', '60px'], ['100%', '400px']]));
   await refreshRefs();
-  const students = await api('/admin/students');
+  let career = adminCareer();
+  let students = await api('/admin/students', { query: { career_id: career === 'all' ? '' : career } });
   if (!ctx.alive()) return;
   const open = A.settings.allow_self_register === '1';
   let q = '';
@@ -1028,6 +1251,7 @@ async function pageStudents(ctx) {
         : '<strong>Acceso restringido:</strong> solo los estudiantes de esta lista pueden entrar, usando su cédula y el correo registrado.'
     } <a href="#/ajustes">Cambiar</a></span></div>
     <section class="toolbar">
+      ${careerPicker(A.structure, career)}
       <div class="input-icon search">${icon('search')}<input class="input" type="search" placeholder="Buscar por nombre, cédula o correo…" data-search></div>
       <span class="spacer"></span>
       <button class="btn btn-ghost" data-import>${icon('upload')} Importar lista</button>
@@ -1042,13 +1266,13 @@ async function pageStudents(ctx) {
     const list = term ? students.filter((s) => [s.name, s.email, s.cedula].some((v) => (v || '').toLowerCase().includes(term))) : students;
     view.querySelector('[data-table]').innerHTML = list.length
       ? `<div class="table-wrap"><table class="table responsive">
-          <thead><tr><th>Estudiante</th><th>Cédula</th><th>Semestre</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead>
+          <thead><tr><th>Estudiante</th><th>Cédula</th><th>Carrera</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead>
           <tbody>${list
             .map(
               (s) => `<tr>
                 <td class="c-main"><div class="person"><div class="avatar">${esc(initials(s.name || s.email))}</div><div style="min-width:0"><strong>${esc(s.name || 'Sin nombre')}</strong><span>${esc(s.email)}</span></div></div></td>
                 <td class="c-extra">${icon('id')} ${esc(s.cedula)}</td>
-                <td class="hide-mobile">${esc(s.semester_name || '—')}</td>
+                <td class="hide-mobile">${esc([s.career_name, s.semester_name].filter(Boolean).join(' · ') || '—')}</td>
                 <td class="hide-mobile"><span class="status-dot" style="--c:${s.active ? 'var(--success)' : 'var(--text-3)'}">${s.active ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="hide-mobile muted">${s.last_login ? timeAgo(s.last_login) : 'Nunca'}</td>
                 <td class="c-actions" style="text-align:right;white-space:nowrap">
@@ -1076,6 +1300,12 @@ async function pageStudents(ctx) {
   });
   view.querySelector('[data-search]').addEventListener('input', (e) => {
     q = e.target.value;
+    draw();
+  });
+  view.querySelector('[data-career]').addEventListener('change', async (e) => {
+    career = e.target.value;
+    setAdminCareer(career);
+    students = await api('/admin/students', { query: { career_id: career === 'all' ? '' : career } });
     draw();
   });
   draw();
@@ -1288,6 +1518,7 @@ function moreMenu() {
     title: 'Más opciones',
     size: 'sm',
     body: `<div class="sheet-menu">
+      <a href="#/facultades" data-close><span class="m-ico">${icon('landmark')}</span>Facultades y carreras</a>
       <a href="#/semestres" data-close><span class="m-ico">${icon('layers')}</span>Semestres</a>
       <a href="#/estudiantes" data-close><span class="m-ico">${icon('users')}</span>Estudiantes</a>
       <a href="#/ajustes" data-close><span class="m-ico">${icon('settings')}</span>Ajustes</a>
@@ -1319,6 +1550,9 @@ function moreMenu() {
   }
   A.auth = data.auth;
   A.settings = await api('/admin/settings');
+  if (data.settings && data.settings.demo) {
+    document.body.insertAdjacentHTML('afterbegin', `<div class="as-banner">${icon('sparkles')}<span>Versión de demostración: los datos son de ejemplo y se reinician solos. Nada de lo que hagas aquí afecta al portal real.</span></div>`);
+  }
 
   const viewAs = document.getElementById('view-as-student');
   if (viewAs) viewAs.innerHTML = `${icon('eye')} Ver como estudiante`;
@@ -1332,6 +1566,7 @@ function moreMenu() {
       { href: '#/resumen', icon: 'home', label: 'Resumen' },
       { href: '#/calendario', icon: 'calendar', label: 'Calendario' },
       { section: 'Contenido' },
+      { href: '#/facultades', icon: 'landmark', label: 'Facultades' },
       { href: '#/semestres', icon: 'layers', label: 'Semestres' },
       { href: '#/materias', icon: 'book', label: 'Materias' },
       { href: '#/materiales', icon: 'folder', label: 'Materiales' },
@@ -1344,13 +1579,14 @@ function moreMenu() {
       { href: '#/materias', icon: 'book', label: 'Materias' },
       { href: '#/calendario', icon: 'calendar', label: 'Calendario' },
       { href: '#/materiales', icon: 'folder', label: 'Materiales' },
-      { action: 'more', icon: 'more', label: 'Más', matches: ['/semestres', '/estudiantes', '/ajustes'] },
+      { action: 'more', icon: 'more', label: 'Más', matches: ['/facultades', '/semestres', '/estudiantes', '/ajustes'] },
     ],
     onMore: moreMenu,
   });
 
   await refreshRefs();
   Router.on('/resumen', pageOverview)
+    .on('/facultades', pageStructure)
     .on('/semestres', pageSemesters)
     .on('/materias', pageSubjectsAdmin)
     .on('/materias/:id', pageSubjectAdmin)

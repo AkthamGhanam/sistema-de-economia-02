@@ -12,10 +12,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
-const { env, UPLOAD_DIR, IS_VERCEL } = require('./db');
+const { env, UPLOAD_DIR, IS_VERCEL, IS_DEMO } = require('./db');
 
-const BLOB_TOKEN = env('BLOB_READ_WRITE_TOKEN');
-const MODE = BLOB_TOKEN ? 'blob' : IS_VERCEL ? 'missing' : 'local';
+// En modo demostración los archivos van a una carpeta temporal: nunca al Blob real.
+const BLOB_TOKEN = IS_DEMO ? null : env('BLOB_READ_WRITE_TOKEN');
+const MODE = BLOB_TOKEN ? 'blob' : IS_VERCEL && !IS_DEMO ? 'missing' : 'local';
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB) || (MODE === 'blob' ? 100 : 50);
 
 let blobSdk = null;

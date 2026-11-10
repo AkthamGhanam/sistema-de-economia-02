@@ -22,11 +22,54 @@
         if (v) el.textContent = v;
       });
       document.title = `Ingresar · ${s.site_name}`;
+      if (s.demo) showDemo(s.demo);
       if (s.allow_self_register) {
         $('#register-note').textContent = '¿Primera vez? Escribe tu cédula y correo y tu cuenta se creará automáticamente.';
       }
     })
     .catch(() => {});
+
+  /* ----- demostración: accesos de prueba ----- */
+  function showDemo(demo) {
+    const card = document.createElement('div');
+    card.className = 'login-card demo-card';
+    card.innerHTML = `
+      <div class="login-card-head"><h2 style="font-size:18px">${icon('sparkles')} Versión de demostración</h2>
+        <p>Datos de ejemplo con varias facultades y carreras. Toca un acceso para probarlo.</p></div>
+      <div class="list">
+        ${demo.students
+          .map(
+            (st) => `<button type="button" class="career-row clickable" data-demo-student="${esc(st.cedula)}|${esc(st.email)}">
+              <span class="avatar" style="width:36px;height:36px;font-size:13px">${esc(initials(st.name))}</span>
+              <span class="info"><strong>${esc(st.name)} · ${esc(st.career)}</strong><span>Cédula ${esc(st.cedula)} · ${esc(st.email)}</span></span>
+              <span class="badge">Estudiante</span></button>`
+          )
+          .join('')}
+        <button type="button" class="career-row clickable" data-demo-admin="${esc(demo.admin.username)}|${esc(demo.admin.password)}">
+          <span class="avatar" style="width:36px;height:36px;font-size:13px">AD</span>
+          <span class="info"><strong>Panel de administración</strong><span>Usuario ${esc(demo.admin.username)} · contraseña ${esc(demo.admin.password)}</span></span>
+          <span class="badge">Admin</span></button>
+      </div>`;
+    document.querySelector('.login-card').after(card);
+    card.addEventListener('click', (e) => {
+      const st = e.target.closest('[data-demo-student]');
+      const ad = e.target.closest('[data-demo-admin]');
+      if (st) {
+        const [cedula, email] = st.dataset.demoStudent.split('|');
+        selectTab('student');
+        $('#cedula').value = cedula;
+        $('#email').value = email;
+        $('#student-form [type=submit]').focus();
+      } else if (ad) {
+        const [user, pass] = ad.dataset.demoAdmin.split('|');
+        selectTab('admin');
+        $('#username').value = user;
+        $('#password').value = pass;
+        $('#admin-form [type=submit]').focus();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 
   /* ----- selector estudiante / admin ----- */
   const seg = $('.segmented');

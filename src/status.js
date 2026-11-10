@@ -8,7 +8,7 @@ const pkg = require('../package.json');
 
 async function systemStatus() {
   const st = storage.status();
-  let database = db.IS_REMOTE ? 'Turso (nube)' : db.IS_VERCEL ? 'falta configurar' : 'archivo local';
+  let database = db.IS_DEMO ? 'demostración (datos de ejemplo)' : db.IS_REMOTE ? 'Turso (nube)' : db.IS_VERCEL ? 'falta configurar' : 'archivo local';
   let dbOk = !db.configError();
   if (dbOk) {
     try {
@@ -34,6 +34,7 @@ async function systemStatus() {
     archivos,
     archivos_ok: st.mode !== 'missing',
     en_vercel: db.IS_VERCEL,
+    demo: db.IS_DEMO,
     entorno: process.env.VERCEL_ENV || (db.IS_VERCEL ? 'vercel' : 'local'),
     version: pkg.version,
   };

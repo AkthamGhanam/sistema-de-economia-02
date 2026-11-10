@@ -5,6 +5,8 @@
  *  - En tu computadora: un archivo local (DATA_DIR/portal.db), sin configurar nada.
  *  - En Vercel: una base de datos Turso (variables TURSO_DATABASE_URL y TURSO_AUTH_TOKEN),
  *    porque Vercel no conserva archivos entre ejecuciones.
+ *  - Modo demostración (vistas previas de Vercel o DEMO_MODE=1): una base temporal con
+ *    datos de ejemplo, separada de la base real. Nunca toca Turso.
  */
 
 const fs = require('node:fs');
@@ -22,11 +24,17 @@ function env(...names) {
 }
 
 const IS_VERCEL = !!process.env.VERCEL;
-const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
+// Las vistas previas de Vercel (ramas distintas de main) usan datos de ejemplo, salvo que
+// se pida explícitamente la base real con PREVIEW_USE_PRODUCTION_DB=1.
+const IS_DEMO =
+  process.env.DEMO_MODE === '1' || (process.env.VERCEL_ENV === 'preview' && process.env.PREVIEW_USE_PRODUCTION_DB !== '1');
+const DATA_DIR = path.resolve(
+  IS_DEMO && IS_VERCEL ? '/tmp/portal-demo' : process.env.DATA_DIR || path.join(__dirname, '..', 'data')
+);
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 
-let remoteUrl = env('TURSO_DATABASE_URL', 'LIBSQL_URL', 'TURSO_URL');
-if (!remoteUrl && /^(libsql|https?|wss?):\/\//.test(process.env.DATABASE_URL || '')) remoteUrl = process.env.DATABASE_URL;
+let remoteUrl = IS_DEMO ? null : env('TURSO_DATABASE_URL', 'LIBSQL_URL', 'TURSO_URL');
+if (!IS_DEMO && !remoteUrl && /^(libsql|https?|wss?):\/\//.test(process.env.DATABASE_URL || '')) remoteUrl = process.env.DATABASE_URL;
 const authToken = env('TURSO_AUTH_TOKEN', 'LIBSQL_AUTH_TOKEN', 'TURSO_TOKEN', 'DATABASE_AUTH_TOKEN');
 
 const IS_REMOTE = !!remoteUrl;
@@ -35,7 +43,7 @@ let configError = null;
 
 if (IS_REMOTE) {
   client = createClient({ url: remoteUrl, authToken: authToken || undefined });
-} else if (IS_VERCEL) {
+} else if (IS_VERCEL && !IS_DEMO) {
   configError =
     'Falta conectar la base de datos. En Vercel → Settings → Environment Variables agrega TURSO_DATABASE_URL y TURSO_AUTH_TOKEN, y vuelve a desplegar.';
 } else {
@@ -58,8 +66,30 @@ CREATE TABLE IF NOT EXISTS admins (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS faculties (
+  id          INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL,
+  code        TEXT,
+  description TEXT,
+  color       TEXT,
+  position    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS careers (
+  id          INTEGER PRIMARY KEY,
+  faculty_id  INTEGER NOT NULL REFERENCES faculties(id),
+  name        TEXT NOT NULL,
+  code        TEXT,
+  description TEXT,
+  color       TEXT,
+  position    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS semesters (
   id          INTEGER PRIMARY KEY,
+  career_id   INTEGER REFERENCES careers(id),
   name        TEXT NOT NULL,
   number      INTEGER,
   period      TEXT,
@@ -73,6 +103,7 @@ CREATE TABLE IF NOT EXISTS students (
   cedula      TEXT NOT NULL UNIQUE,
   email       TEXT NOT NULL COLLATE NOCASE,
   name        TEXT,
+  career_id   INTEGER REFERENCES careers(id),
   semester_id INTEGER REFERENCES semesters(id) ON DELETE SET NULL,
   active      INTEGER NOT NULL DEFAULT 1,
   last_login  TEXT,
@@ -242,6 +273,29 @@ async function addColumnIfMissing(table, column, type) {
 
 async function migrate() {
   await addColumnIfMissing('subjects', 'professor_phone', 'TEXT');
+  await addColumnIfMissing('semesters', 'career_id', 'INTEGER');
+  await addColumnIfMissing('students', 'career_id', 'INTEGER');
+  await db().executeMultiple(`
+    CREATE INDEX IF NOT EXISTS idx_careers_faculty  ON careers(faculty_id);
+    CREATE INDEX IF NOT EXISTS idx_semesters_career ON semesters(career_id);
+    CREATE INDEX IF NOT EXISTS idx_students_career  ON students(career_id);
+  `);
+
+  // Bases de la versión anterior (sin facultades): sus semestres pasan a una carrera
+  // inicial dentro de una facultad inicial, que el administrador puede renombrar.
+  if ((await get('SELECT COUNT(*) AS n FROM semesters WHERE career_id IS NULL')).n > 0) {
+    let career = await get('SELECT id FROM careers ORDER BY position, id LIMIT 1');
+    if (!career) {
+      let faculty = await get('SELECT id FROM faculties ORDER BY position, id LIMIT 1');
+      if (!faculty) faculty = { id: (await run("INSERT INTO faculties (name, position) VALUES ('Facultad principal', 1)")).lastInsertRowid };
+      career = { id: (await run("INSERT INTO careers (faculty_id, name, position) VALUES (?, 'Carrera principal', 1)", faculty.id)).lastInsertRowid };
+    }
+    await batch([
+      ['UPDATE semesters SET career_id = ? WHERE career_id IS NULL', career.id],
+      ['UPDATE students SET career_id = (SELECT career_id FROM semesters WHERE semesters.id = students.semester_id) WHERE career_id IS NULL AND semester_id IS NOT NULL'],
+      ['UPDATE students SET career_id = ? WHERE career_id IS NULL', career.id],
+    ]);
+  }
 }
 
 /* ---------- inicialización (una vez por proceso) ---------- */
@@ -259,7 +313,9 @@ async function init() {
   await batch(Object.entries(DEFAULT_SETTINGS).map(([k, v]) => ['INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', k, v]));
 
   const auth = require('./auth');
-  if (!(await get('SELECT id FROM admins LIMIT 1'))) {
+  if (IS_DEMO) {
+    await require('./demo').prepareDemo();
+  } else if (!(await get('SELECT id FROM admins LIMIT 1'))) {
     const username = process.env.ADMIN_USER || 'admin';
     const password = process.env.ADMIN_PASSWORD || 'admin123';
     await run(
@@ -288,6 +344,7 @@ module.exports = {
   env,
   IS_VERCEL,
   IS_REMOTE,
+  IS_DEMO,
   DATA_DIR,
   UPLOAD_DIR,
   all,

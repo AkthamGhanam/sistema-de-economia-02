@@ -93,9 +93,11 @@ const withUploadCleanup = (handler) => async (req, res) => {
 router.get('/stats', async (req, res) => {
   const t = today(req);
   const n = (sql, ...p) => get(sql, ...p).then((r) => r.n);
-  const [semesters, subjects, classes, materials, students, active_students, upcoming, storage_bytes, upcoming_events, recent_materials] =
+  const [semesters, faculties, careers, subjects, classes, materials, students, active_students, upcoming, storage_bytes, upcoming_events, recent_materials] =
     await Promise.all([
       n('SELECT COUNT(*) AS n FROM semesters'),
+      n('SELECT COUNT(*) AS n FROM faculties'),
+      n('SELECT COUNT(*) AS n FROM careers'),
       n('SELECT COUNT(*) AS n FROM subjects'),
       n('SELECT COUNT(*) AS n FROM classes'),
       n('SELECT COUNT(*) AS n FROM materials'),
@@ -108,6 +110,8 @@ router.get('/stats', async (req, res) => {
     ]);
   res.json({
     semesters,
+    faculties,
+    careers,
     subjects,
     classes,
     materials,
@@ -122,10 +126,110 @@ router.get('/stats', async (req, res) => {
   });
 });
 
+/* ---------- facultades y carreras ---------- */
+
+function facultyInput(body) {
+  return {
+    name: requiredStr(body.name, 'Nombre de la facultad', 160),
+    code: str(body.code, 30),
+    description: str(body.description, 1000),
+    color: isColor(body.color) ? body.color.toLowerCase() : '#8b5cf6',
+    position: int(body.position) ?? 0,
+  };
+}
+
+router.post('/faculties', async (req, res) => {
+  const f = facultyInput(req.body);
+  const info = await run('INSERT INTO faculties (name, code, description, color, position) VALUES (?, ?, ?, ?, ?)', f.name, f.code, f.description, f.color, f.position);
+  res.status(201).json(await get('SELECT * FROM faculties WHERE id = ?', info.lastInsertRowid));
+});
+
+router.put('/faculties/:id', async (req, res) => {
+  const facultyId = id(req.params.id);
+  if (!(await get('SELECT id FROM faculties WHERE id = ?', facultyId))) throw notFound('La facultad no existe');
+  const f = facultyInput(req.body);
+  await run('UPDATE faculties SET name = ?, code = ?, description = ?, color = ?, position = ? WHERE id = ?', f.name, f.code, f.description, f.color, f.position, facultyId);
+  res.json(await get('SELECT * FROM faculties WHERE id = ?', facultyId));
+});
+
+router.delete('/faculties/:id', async (req, res) => {
+  const facultyId = id(req.params.id);
+  if (!(await get('SELECT id FROM faculties WHERE id = ?', facultyId))) throw notFound('La facultad no existe');
+  if ((await get('SELECT COUNT(*) AS n FROM careers WHERE faculty_id = ?', facultyId)).n) {
+    throw bad('Esta facultad todavía tiene carreras. Elimínalas o muévelas a otra facultad primero.');
+  }
+  await run('DELETE FROM faculties WHERE id = ?', facultyId);
+  res.json({ ok: true });
+});
+
+async function careerInput(body) {
+  const facultyId = id(body.faculty_id);
+  if (!facultyId || !(await get('SELECT id FROM faculties WHERE id = ?', facultyId))) throw bad('Selecciona una facultad válida');
+  return {
+    faculty_id: facultyId,
+    name: requiredStr(body.name, 'Nombre de la carrera', 160),
+    code: str(body.code, 30),
+    description: str(body.description, 1000),
+    color: isColor(body.color) ? body.color.toLowerCase() : '#6366f1',
+    position: int(body.position) ?? 0,
+  };
+}
+
+router.post('/careers', async (req, res) => {
+  const c = await careerInput(req.body);
+  const info = await run(
+    'INSERT INTO careers (faculty_id, name, code, description, color, position) VALUES (?, ?, ?, ?, ?, ?)',
+    c.faculty_id,
+    c.name,
+    c.code,
+    c.description,
+    c.color,
+    c.position
+  );
+  res.status(201).json(await get('SELECT * FROM careers WHERE id = ?', info.lastInsertRowid));
+});
+
+router.put('/careers/:id', async (req, res) => {
+  const careerId = id(req.params.id);
+  if (!(await get('SELECT id FROM careers WHERE id = ?', careerId))) throw notFound('La carrera no existe');
+  const c = await careerInput(req.body);
+  await run(
+    'UPDATE careers SET faculty_id = ?, name = ?, code = ?, description = ?, color = ?, position = ? WHERE id = ?',
+    c.faculty_id,
+    c.name,
+    c.code,
+    c.description,
+    c.color,
+    c.position,
+    careerId
+  );
+  res.json(await get('SELECT * FROM careers WHERE id = ?', careerId));
+});
+
+router.delete('/careers/:id', async (req, res) => {
+  const careerId = id(req.params.id);
+  if (!(await get('SELECT id FROM careers WHERE id = ?', careerId))) throw notFound('La carrera no existe');
+  if ((await get('SELECT COUNT(*) AS n FROM semesters WHERE career_id = ?', careerId)).n) {
+    throw bad('Esta carrera todavía tiene semestres. Elimínalos primero (se borran con sus materias).');
+  }
+  await batch([
+    ['UPDATE students SET career_id = NULL WHERE career_id = ?', careerId],
+    ['DELETE FROM careers WHERE id = ?', careerId],
+  ]);
+  res.json({ ok: true });
+});
+
 /* ---------- semestres ---------- */
 
-function semesterInput(body) {
+async function semesterInput(body) {
+  let careerId = id(body.career_id);
+  if (body.career_id !== undefined && body.career_id !== '' && body.career_id !== null) {
+    if (!careerId || !(await get('SELECT id FROM careers WHERE id = ?', careerId))) throw bad('Selecciona una carrera válida');
+  } else if ((await get('SELECT COUNT(*) AS n FROM careers')).n) {
+    throw bad('Selecciona la carrera a la que pertenece el semestre');
+  }
   return {
+    career_id: careerId,
     name: requiredStr(body.name, 'Nombre', 80),
     number: int(body.number),
     period: str(body.period, 40),
@@ -135,9 +239,10 @@ function semesterInput(body) {
 }
 
 router.post('/semesters', async (req, res) => {
-  const s = semesterInput(req.body);
+  const s = await semesterInput(req.body);
   const info = await run(
-    'INSERT INTO semesters (name, number, period, description, position) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO semesters (career_id, name, number, period, description, position) VALUES (?, ?, ?, ?, ?, ?)',
+    s.career_id,
     s.name,
     s.number,
     s.period,
@@ -150,9 +255,10 @@ router.post('/semesters', async (req, res) => {
 router.put('/semesters/:id', async (req, res) => {
   const semId = id(req.params.id);
   if (!(await get('SELECT id FROM semesters WHERE id = ?', semId))) throw notFound('El semestre no existe');
-  const s = semesterInput(req.body);
+  const s = await semesterInput(req.body);
   await run(
-    'UPDATE semesters SET name = ?, number = ?, period = ?, description = ?, position = ? WHERE id = ?',
+    'UPDATE semesters SET career_id = ?, name = ?, number = ?, period = ?, description = ?, position = ? WHERE id = ?',
+    s.career_id,
     s.name,
     s.number,
     s.period,
@@ -549,20 +655,35 @@ router.delete('/events/:id', async (req, res) => {
 /* ---------- estudiantes ---------- */
 
 const STUDENT_SELECT = `
-  SELECT st.*, sem.name AS semester_name
-    FROM students st LEFT JOIN semesters sem ON sem.id = st.semester_id`;
+  SELECT st.*, sem.name AS semester_name, car.name AS career_name, fac.name AS faculty_name
+    FROM students st
+    LEFT JOIN semesters sem ON sem.id = st.semester_id
+    LEFT JOIN careers car   ON car.id = st.career_id
+    LEFT JOIN faculties fac ON fac.id = car.faculty_id`;
+
+/** Carrera y semestre coherentes: el semestre debe pertenecer a la carrera. */
+async function careerAndSemester(body) {
+  let careerId = id(body.career_id);
+  if (careerId && !(await get('SELECT id FROM careers WHERE id = ?', careerId))) careerId = null;
+  let semesterId = id(body.semester_id);
+  const sem = semesterId ? await get('SELECT id, career_id FROM semesters WHERE id = ?', semesterId) : null;
+  if (!sem) semesterId = null;
+  else if (careerId && sem.career_id && sem.career_id !== careerId) throw bad('El semestre elegido no pertenece a esa carrera');
+  else if (!careerId) careerId = sem.career_id || null;
+  return { careerId, semesterId };
+}
 
 async function studentInput(body) {
   const cedula = normalizeCedula(body.cedula);
   const email = normalizeEmail(body.email);
   if (!isValidCedula(cedula)) throw bad('La cédula no es válida');
   if (!isEmail(email)) throw bad('El correo no es válido');
-  let semesterId = id(body.semester_id);
-  if (semesterId && !(await get('SELECT id FROM semesters WHERE id = ?', semesterId))) semesterId = null;
+  const { careerId, semesterId } = await careerAndSemester(body);
   return {
     cedula,
     email,
     name: str(body.name, 120),
+    career_id: careerId,
     semester_id: semesterId,
     active: body.active === undefined ? 1 : body.active === true || body.active === 1 || body.active === '1' ? 1 : 0,
   };
@@ -570,23 +691,32 @@ async function studentInput(body) {
 
 router.get('/students', async (req, res) => {
   const q = str(req.query.q, 80);
+  const careerId = id(req.query.career_id);
+  const where = [];
+  const params = [];
+  if (careerId) {
+    where.push('st.career_id = ?');
+    params.push(careerId);
+  }
   if (q) {
     const like = `%${q.replace(/[%_]/g, '')}%`;
-    return res.json(
-      await all(`${STUDENT_SELECT} WHERE st.name LIKE ? OR st.email LIKE ? OR st.cedula LIKE ? ORDER BY st.name COLLATE NOCASE, st.id`, like, like, like)
-    );
+    where.push('(st.name LIKE ? OR st.email LIKE ? OR st.cedula LIKE ?)');
+    params.push(like, like, like);
   }
-  res.json(await all(`${STUDENT_SELECT} ORDER BY st.name IS NULL, st.name COLLATE NOCASE, st.id`));
+  res.json(
+    await all(`${STUDENT_SELECT} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY st.name IS NULL, st.name COLLATE NOCASE, st.id`, ...params)
+  );
 });
 
 router.post('/students', async (req, res) => {
   const s = await studentInput(req.body);
   if (await get('SELECT id FROM students WHERE cedula = ?', s.cedula)) throw new HttpError(409, 'Ya existe un estudiante con esa cédula');
   const info = await run(
-    'INSERT INTO students (cedula, email, name, semester_id, active) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO students (cedula, email, name, career_id, semester_id, active) VALUES (?, ?, ?, ?, ?, ?)',
     s.cedula,
     s.email,
     s.name,
+    s.career_id,
     s.semester_id,
     s.active
   );
@@ -601,7 +731,16 @@ router.put('/students/:id', async (req, res) => {
     throw new HttpError(409, 'Ya existe otro estudiante con esa cédula');
   }
   await batch([
-    ['UPDATE students SET cedula = ?, email = ?, name = ?, semester_id = ?, active = ? WHERE id = ?', s.cedula, s.email, s.name, s.semester_id, s.active, studentId],
+    [
+      'UPDATE students SET cedula = ?, email = ?, name = ?, career_id = ?, semester_id = ?, active = ? WHERE id = ?',
+      s.cedula,
+      s.email,
+      s.name,
+      s.career_id,
+      s.semester_id,
+      s.active,
+      studentId,
+    ],
     ...(s.active ? [] : [["DELETE FROM sessions WHERE role = 'student' AND user_id = ?", studentId]]),
   ]);
   res.json(await get(`${STUDENT_SELECT} WHERE st.id = ?`, studentId));
@@ -625,8 +764,7 @@ router.delete('/students/:id', async (req, res) => {
 router.post('/students/import', async (req, res) => {
   const text = typeof req.body.text === 'string' ? req.body.text : '';
   if (!text.trim()) throw bad('Pega la lista de estudiantes');
-  let semesterId = id(req.body.semester_id);
-  if (semesterId && !(await get('SELECT id FROM semesters WHERE id = ?', semesterId))) semesterId = null;
+  const { careerId, semesterId } = await careerAndSemester(req.body);
 
   const existing = new Set((await all('SELECT cedula FROM students')).map((r) => r.cedula));
   const result = { created: 0, updated: 0, errors: [] };
@@ -661,13 +799,15 @@ router.post('/students/import', async (req, res) => {
         existing.add(cedula);
       }
       statements.push([
-        `INSERT INTO students (cedula, email, name, semester_id) VALUES (?, ?, ?, ?)
+        `INSERT INTO students (cedula, email, name, career_id, semester_id) VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(cedula) DO UPDATE SET email = excluded.email,
            name = COALESCE(excluded.name, students.name),
+           career_id = COALESCE(excluded.career_id, students.career_id),
            semester_id = COALESCE(excluded.semester_id, students.semester_id)`,
         cedula,
         email,
         nameParts.join(' ').slice(0, 120) || null,
+        careerId,
         semesterId,
       ]);
     });

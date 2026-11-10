@@ -39,6 +39,25 @@ Una línea de mercado que sube, corrige y alcanza su punto máximo. La pequeña 
 
 ---
 
+## Estructura de la universidad
+
+El portal se organiza en **Facultad → Carrera → Semestre → Materias** (con sus clases, materiales y evaluaciones).
+
+- **Estudiantes:** ven primero su carrera y su semestre. En **Facultades** pueden explorar todas las carreras, y en **Materias** y **Calendario** cambiar de carrera con el selector.
+- **Administradores:** en **Facultades** crean facultades y carreras. Cada semestre pertenece a una carrera, y los estudiantes se asignan a una carrera y un semestre.
+- **Bases de la versión anterior:** sus semestres pasan automáticamente a "Facultad principal → Carrera principal". Luego solo hay que cambiarles el nombre.
+
+### Modo demostración
+
+Las **vistas previas de Vercel** (las ramas distintas de `main`) arrancan en modo demostración. Usan una base temporal con 3 facultades y 7 carreras de ejemplo, y **nunca tocan la base de datos real ni el Blob**. La pantalla de inicio muestra los accesos de prueba:
+
+- **Administrador:** `demo` / `demo1234`
+- **Estudiantes:** María Pérez, cédula `12345678`, correo `estudiante@demo.com` (Economía), entre otros.
+
+Para probarlo en tu computadora: `DEMO_MODE=1 npm start`. Si alguna vez quieres que una vista previa use la base real, agrega `PREVIEW_USE_PRODUCTION_DB=1` en las variables de *Preview* de Vercel.
+
+---
+
 ## 1. Ejecutarlo en tu computadora
 
 Necesitas **Node.js 20.12 o superior** (recomendado la versión LTS de [nodejs.org](https://nodejs.org)) y **Git** ([git-scm.com](https://git-scm.com)). No hace falta instalar ninguna base de datos: en tu computadora se guarda todo en la carpeta `data/`.

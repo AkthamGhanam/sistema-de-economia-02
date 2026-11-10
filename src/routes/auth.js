@@ -16,6 +16,7 @@ async function publicSettings() {
     period: s.period,
     welcome_message: s.welcome_message,
     allow_self_register: s.allow_self_register === '1',
+    demo: require('../demo').demoInfo(),
   };
 }
 
