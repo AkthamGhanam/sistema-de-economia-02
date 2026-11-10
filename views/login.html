@@ -3,50 +3,47 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f3f4fb" />
-    <meta name="description" content="Portal académico: materias, materiales de apoyo y calendario de evaluaciones." />
-    <title>Ingresar · Portal académico</title>
+    <meta name="theme-color" content="#f3f3f2" />
+    <meta name="description" content="BytesAcademy: materias, materiales de apoyo y calendario de evaluaciones." />
+    <title>Ingresar · BytesAcademy</title>
     <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,700..900&display=swap" />
     <link rel="stylesheet" href="/css/styles.css?v=__V__" />
     <script src="/js/theme.js?v=__V__"></script>
   </head>
   <body class="login-body">
     <div class="login">
-      <div class="login-bg" aria-hidden="true">
-        <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
-        <div class="grid-pattern"></div>
-      </div>
+      <div class="login-bg" aria-hidden="true"><div class="binary-pattern"></div></div>
 
       <button type="button" class="icon-btn theme-float" data-theme-toggle></button>
 
       <section class="login-hero">
-        <div class="brand">
-          <div class="brand-logo" data-brand-logo></div>
-          <div class="brand-text">
-            <strong data-s="site_name">Portal académico</strong>
-            <span data-s="university"></span>
-          </div>
+        <div class="hero-binary" aria-hidden="true"></div>
+        <div class="hero-rings" data-brand-rings aria-hidden="true"></div>
+        <div class="hero-brand">
+          <span class="hero-iso" data-brand-logo></span>
+          <span class="hero-lockup" data-brand-lockup></span>
         </div>
+        <p class="hero-course"><span data-s="site_name"></span><span class="sep" aria-hidden="true">·</span><span data-s="university"></span></p>
 
-        <h1>Todo tu semestre,<br /><span class="grad-text">en un solo lugar.</span></h1>
+        <h1>Todo tu semestre,<br /><span class="accent">en un solo lugar.</span></h1>
         <p data-s="welcome_message"></p>
 
         <ul class="features">
           <li>
-            <span class="f-ico" style="--c: #6366f1"><span data-icon="book"></span></span>
+            <span class="f-ico"><span data-icon="book"></span></span>
             <div><strong>Materias por semestre</strong><span>Profesor, horario, aula y lo que se vio en cada clase.</span></div>
           </li>
           <li>
-            <span class="f-ico" style="--c: #ec4899"><span data-icon="folder"></span></span>
+            <span class="f-ico"><span data-icon="folder"></span></span>
             <div><strong>Materiales de apoyo</strong><span>Guías, presentaciones, lecturas y enlaces listos para descargar.</span></div>
           </li>
           <li>
-            <span class="f-ico" style="--c: #f97316"><span data-icon="calendar"></span></span>
+            <span class="f-ico"><span data-icon="calendar"></span></span>
             <div><strong>Calendario de evaluaciones</strong><span>Exámenes, parciales y entregas con cuenta regresiva.</span></div>
           </li>
         </ul>
@@ -54,8 +51,9 @@
 
       <section class="login-panel">
         <div class="mobile-brand">
-          <div class="brand-logo" data-brand-logo></div>
-          <h1 data-s="site_name">Portal académico</h1>
+          <div class="mobile-lockup"><span class="hero-iso" data-brand-logo></span><span class="hero-lockup" data-brand-lockup></span></div>
+          <h1 class="sr-only">BytesAcademy</h1>
+          <p class="mobile-course" data-s="site_name"></p>
           <p data-s="welcome_message"></p>
         </div>
 
@@ -113,7 +111,7 @@
           </form>
         </div>
 
-        <p class="login-foot">© <span id="year"></span> · <span data-s="site_name"></span></p>
+        <p class="login-foot">© <span id="year"></span> · BytesAcademy · <span data-s="site_name"></span></p>
       </section>
     </div>
 

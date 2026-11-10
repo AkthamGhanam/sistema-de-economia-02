@@ -10,7 +10,7 @@
     });
   }
 
-  document.querySelectorAll('[data-brand-logo]').forEach((el) => (el.innerHTML = icon('logo')));
+  hydrateBrand();
   hydrateIcons();
   bindThemeToggles();
   $('#year').textContent = new Date().getFullYear();
@@ -21,7 +21,7 @@
         const v = s[el.dataset.s];
         if (v) el.textContent = v;
       });
-      document.title = `Ingresar · ${s.site_name}`;
+      document.title = `Ingresar · ${BRAND_NAME}`;
       if (s.allow_self_register) {
         $('#register-note').textContent = '¿Primera vez? Escribe tu cédula y correo y tu cuenta se creará automáticamente.';
       }

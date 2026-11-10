@@ -75,9 +75,9 @@ async function pageHome(ctx) {
     </section>
 
     <section class="stats" style="--cols:3">
-      <a class="stat" href="#/materias" style="--c:#6366f1"><span class="s-ico">${icon('book')}</span><div><b>${d.counts.subjects}</b><span>Materias</span></div></a>
-      <a class="stat" href="#/materias" style="--c:#ec4899"><span class="s-ico">${icon('folder')}</span><div><b>${d.counts.materials}</b><span>Materiales</span></div></a>
-      <a class="stat" href="#/calendario" style="--c:#f97316"><span class="s-ico">${icon('calendar')}</span><div><b>${d.counts.upcoming30}</b><span>Evaluaciones (30 días)</span></div></a>
+      <a class="stat" href="#/materias" style="--c:#19510A"><span class="s-ico">${icon('book')}</span><div><b>${d.counts.subjects}</b><span>Materias</span></div></a>
+      <a class="stat" href="#/materias" style="--c:#2f7d17"><span class="s-ico">${icon('folder')}</span><div><b>${d.counts.materials}</b><span>Materiales</span></div></a>
+      <a class="stat" href="#/calendario" style="--c:#a16207"><span class="s-ico">${icon('calendar')}</span><div><b>${d.counts.upcoming30}</b><span>Evaluaciones (30 días)</span></div></a>
     </section>
 
     <section class="grid-main">

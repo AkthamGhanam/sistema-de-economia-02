@@ -678,7 +678,7 @@ async function pageOverview(ctx) {
                  <div class="stack-sm" style="margin-top:12px">${steps
                    .map(
                      ([t, done, href]) =>
-                       `<a href="${href}" class="row" style="color:#fff;text-decoration:none;gap:10px"><span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:${done ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.2)'};color:${done ? '#5b4cf0' : '#fff'}">${icon(done ? 'check' : 'right')}</span><span style="${done ? 'opacity:.75;text-decoration:line-through' : 'font-weight:650'}">${t}</span></a>`
+                       `<a href="${href}" class="row" style="color:#fff;text-decoration:none;gap:10px"><span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:${done ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.2)'};color:${done ? '#19510A' : '#fff'}">${icon(done ? 'check' : 'right')}</span><span style="${done ? 'opacity:.75;text-decoration:line-through' : 'font-weight:650'}">${t}</span></a>`
                    )
                    .join('')}</div>`
               : `<div class="lbl">Todo listo</div><h3>Tu portal está funcionando</h3><div class="sub">${st.active_students} estudiante(s) con acceso · ${fmtSize(st.storage_bytes)} en archivos</div>`
@@ -688,17 +688,17 @@ async function pageOverview(ctx) {
     </section>
 
     <section class="stats admin-stats" style="--cols:4">
-      <a class="stat" href="#/materias" style="--c:#6366f1"><span class="s-ico">${icon('book')}</span><div><b>${st.subjects}</b><span>Materias</span></div></a>
-      <a class="stat" href="#/materiales" style="--c:#ec4899"><span class="s-ico">${icon('folder')}</span><div><b>${st.materials}</b><span>Materiales</span></div></a>
-      <a class="stat" href="#/calendario" style="--c:#f97316"><span class="s-ico">${icon('calendar')}</span><div><b>${st.upcoming}</b><span>Evaluaciones próximas</span></div></a>
-      <a class="stat" href="#/estudiantes" style="--c:#10b981"><span class="s-ico">${icon('users')}</span><div><b>${st.students}</b><span>Estudiantes</span></div></a>
+      <a class="stat" href="#/materias" style="--c:#19510A"><span class="s-ico">${icon('book')}</span><div><b>${st.subjects}</b><span>Materias</span></div></a>
+      <a class="stat" href="#/materiales" style="--c:#2f7d17"><span class="s-ico">${icon('folder')}</span><div><b>${st.materials}</b><span>Materiales</span></div></a>
+      <a class="stat" href="#/calendario" style="--c:#a16207"><span class="s-ico">${icon('calendar')}</span><div><b>${st.upcoming}</b><span>Evaluaciones próximas</span></div></a>
+      <a class="stat" href="#/estudiantes" style="--c:#2b3a4a"><span class="s-ico">${icon('users')}</span><div><b>${st.students}</b><span>Estudiantes</span></div></a>
     </section>
 
     <section class="quick-actions">
-      <button class="quick" style="--c:#f97316" data-quick="event"><span class="q-ico">${icon('calendar-plus')}</span><strong>Programar evaluación</strong><span>Examen, parcial, quiz o entrega</span></button>
-      <button class="quick" style="--c:#ec4899" data-quick="upload"><span class="q-ico">${icon('cloud-upload')}</span><strong>Subir material</strong><span>Archivos o enlaces de apoyo</span></button>
-      <button class="quick" style="--c:#6366f1" data-quick="subject"><span class="q-ico">${icon('book')}</span><strong>Nueva materia</strong><span>Profesor, horario e información</span></button>
-      <button class="quick" style="--c:#10b981" data-quick="students"><span class="q-ico">${icon('user-plus')}</span><strong>Agregar estudiantes</strong><span>Uno a uno o pegando una lista</span></button>
+      <button class="quick" style="--c:#a16207" data-quick="event"><span class="q-ico">${icon('calendar-plus')}</span><strong>Programar evaluación</strong><span>Examen, parcial, quiz o entrega</span></button>
+      <button class="quick" style="--c:#2f7d17" data-quick="upload"><span class="q-ico">${icon('cloud-upload')}</span><strong>Subir material</strong><span>Archivos o enlaces de apoyo</span></button>
+      <button class="quick" style="--c:#19510A" data-quick="subject"><span class="q-ico">${icon('book')}</span><strong>Nueva materia</strong><span>Profesor, horario e información</span></button>
+      <button class="quick" style="--c:#2b3a4a" data-quick="students"><span class="q-ico">${icon('user-plus')}</span><strong>Agregar estudiantes</strong><span>Uno a uno o pegando una lista</span></button>
     </section>
 
     <section class="grid-main">
@@ -808,7 +808,7 @@ async function pageSubjectsAdmin(ctx) {
       ? `<div class="list">${list
           .map(
             (s) => `<div class="admin-row" style="cursor:pointer" data-open="${s.id}">
-              <div class="color-tile" style="--c:${s.color || '#6366f1'}">${esc(initials(s.name))}</div>
+              <div class="color-tile" style="--c:${subjectColor(s.color)}">${esc(initials(s.name))}</div>
               <div class="info"><strong>${esc(s.name)}</strong><span>${[s.semester_name, s.professor, s.schedule].filter(Boolean).map(esc).join(' · ')}</span></div>
               <span class="badge neutral hide-mobile">${icon('book')}${s.class_count} clases</span>
               <span class="badge neutral hide-mobile">${icon('folder')}${s.material_count} materiales</span>
@@ -860,7 +860,7 @@ async function pageSubjectAdmin(ctx) {
   ctx.render(`
     ${subjectHero(s, {
       actions: `<a class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border-color:transparent" href="/app#/materias/${s.id}" target="_blank" rel="noopener">${icon('eye')}<span class="hide-mobile">Ver como estudiante</span></a>
-                <button class="btn btn-sm" style="background:#fff;color:#1e1b4b" data-edit-subject>${icon('edit')} Editar información</button>`,
+                <button class="btn btn-sm" style="background:#fff;color:#101820" data-edit-subject>${icon('edit')} Editar información</button>`,
     })}
     <section class="card card-pad">
       <div class="row" style="margin-bottom:10px"><h3 style="font-size:16px;display:flex;gap:8px;align-items:center;flex:1">${icon('info')} Información de la materia</h3><button class="btn btn-ghost btn-sm" data-edit-subject>${icon('edit')} Editar</button></div>

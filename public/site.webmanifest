@@ -1,13 +1,23 @@
 {
-  "name": "Economía 02 · Portal académico",
-  "short_name": "Economía 02",
-  "description": "Materias, materiales de apoyo y calendario de evaluaciones.",
+  "name": "BytesAcademy",
+  "short_name": "BytesAcademy",
+  "description": "BytesAcademy: materias, materiales de apoyo y calendario de evaluaciones.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f3f4fb",
-  "theme_color": "#5b4cf0",
+  "background_color": "#101820",
+  "theme_color": "#19510A",
   "icons": [
-    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

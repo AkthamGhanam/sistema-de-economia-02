@@ -39,6 +39,19 @@ Una línea de mercado que sube, corrige y alcanza su punto máximo. La pequeña 
 
 ---
 
+## Identidad visual: BytesAcademy
+
+El portal usa la identidad de **Bytes** (manual de identidad visual M.I.V.):
+
+- **Colores:** verde `#19510A`, tinta `#101820` y gris `#D7D7D6`, en modo claro y oscuro.
+- **Tipografía:** títulos en *Inter Black Italic* (versión web de Helvetica Now Text Black Italic) y textos en Inter.
+- **Logo:** el isotipo de anillos y el logotipo "Bytes" están en `public/js/common.js` (`brandMark`, `brandLockup`) y en `public/img/` (favicon e íconos). Sin sombras ni contornos, como pide el manual.
+- **Fondos:** patrón de código binario (`public/img/binary.svg`).
+
+El nombre del curso que eliges en **Ajustes** (por ejemplo "Economía 02") aparece debajo de BytesAcademy.
+
+---
+
 ## 1. Ejecutarlo en tu computadora
 
 Necesitas **Node.js 20.12 o superior** (recomendado la versión LTS de [nodejs.org](https://nodejs.org)) y **Git** ([git-scm.com](https://git-scm.com)). No hace falta instalar ninguna base de datos: en tu computadora se guarda todo en la carpeta `data/`.
